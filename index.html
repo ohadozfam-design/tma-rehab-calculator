@@ -1,0 +1,1990 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מחשבון שיפוצים — TMA</title>
+<meta name="description" content="מחשבון עלויות שיפוץ נכסים — The Multi Academy">
+<style>
+/* =====================================================================
+   TMA REHAB CALCULATOR — DESIGN SYSTEM SHELL (Step 1)
+   Quiet-luxury: warm noir, warm ivory, restrained antique gold.
+   RTL Hebrew-first. Self-contained, no build step.
+   NOTE: styling architecture + wizard shell only — no calc/forms logic.
+   ===================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@300;400;500;700;900&family=Heebo:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ---------- 1. DESIGN TOKENS ---------- */
+:root {
+  /* Gold scale (antique, warm) */
+  --gold-50:#fbf6e8; --gold-100:#f4e6c2; --gold-200:#ecd29a; --gold-300:#dfba6e;
+  --gold-400:#cfa657; --gold-500:#c5a253; --gold-600:#a98641; --gold-700:#876830;
+  --gold-800:#604a22; --gold-900:#3a2c14;
+  --gold-soft:#f2e0b6;            /* "candlelight" gold on dark */
+
+  /* Warm noir (never pure black) */
+  --noir-900:#161616; --noir-850:#1a1a1a; --noir-800:#1f1f1f;
+  --noir-700:#272727; --noir-600:#323232; --noir-500:#3c3a36;
+
+  /* Warm ivory (never pure white) */
+  --ivory-50:#fbf9f4; --ivory-100:#f8f4ea; --ivory-200:#f2ede0;
+
+  /* Semantic (always muted) */
+  --success:#5b8a5a; --warning:#c08a3e; --error:#a3463c; --info:#4a6c7a;
+
+  /* App surfaces (dark theme, matching the examples) */
+  --bg:            var(--noir-900);
+  --surface:       #202020;
+  --surface-2:     #262626;
+  --surface-3:     #2e2e2e;
+  --border-soft:   rgba(242,224,182,.10);
+  --border-strong: rgba(242,224,182,.22);
+
+  /* Foreground */
+  --fg:      #f3efe6;                 /* primary text on dark */
+  --fg-2:    rgba(243,239,230,.72);   /* secondary */
+  --fg-3:    rgba(243,239,230,.45);   /* muted / hints */
+
+  /* Typography */
+  --font-display:    'Cormorant Garamond', serif;
+  --font-display-he: 'Frank Ruhl Libre', serif;
+  --font-body:       'Heebo','Inter', system-ui, sans-serif;
+  --font-mono:       'JetBrains Mono', monospace;
+
+  /* Shape & motion */
+  --radius-sm:3px; --radius-md:8px; --radius-lg:14px;
+  --shadow-1:0 2px 10px rgba(0,0,0,.25);
+  --shadow-2:0 12px 40px rgba(0,0,0,.35);
+  --shadow-3:0 28px 90px rgba(0,0,0,.55);
+  --ring: 0 0 0 3px rgba(197,162,83,.28);
+  --ease: cubic-bezier(.22,.61,.36,1);
+  --dur: .28s;
+
+  /* Layout */
+  --wrap: 1120px;
+  --wizard: 720px;
+}
+
+/* ---------- 2. BASE / RESET ---------- */
+*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+html{ scroll-behavior:smooth; }
+body{
+  font-family:var(--font-body);
+  background:var(--bg);
+  color:var(--fg);
+  line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  position:relative;
+}
+/* subtle noir grid texture (from TMA examples) */
+body::before{
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background-image:
+    linear-gradient(rgba(242,224,182,.020) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(242,224,182,.020) 1px, transparent 1px);
+  background-size:56px 56px;
+  -webkit-mask-image:radial-gradient(ellipse at 50% 0%, #000 0%, transparent 78%);
+          mask-image:radial-gradient(ellipse at 50% 0%, #000 0%, transparent 78%);
+}
+:where(h1,h2,h3,h4){ font-family:var(--font-display-he); font-weight:500; line-height:1.12; color:var(--fg); }
+:lang(en){ font-family:var(--font-body); }
+a{ color:inherit; }
+::selection{ background:rgba(197,162,83,.30); color:#fff; }
+:focus-visible{ outline:none; box-shadow:var(--ring); border-radius:var(--radius-sm); }
+
+/* ---------- 3. TYPOGRAPHY HELPERS ---------- */
+.serif   { font-family:var(--font-display-he); }
+.serif-en{ font-family:var(--font-display); }
+.mono    { font-family:var(--font-mono); letter-spacing:.04em; }
+.eyebrow{
+  font-size:11px; font-weight:600; letter-spacing:.28em; text-transform:uppercase;
+  color:var(--gold-soft); display:inline-flex; align-items:center; gap:12px;
+}
+.eyebrow::before{ content:''; width:34px; height:1px; background:var(--gold-500); display:inline-block; }
+.eyebrow.center::after{ content:''; width:34px; height:1px; background:var(--gold-500); display:inline-block; }
+.eyebrow.center{ justify-content:center; }
+.display-1{ font-size:clamp(30px,5vw,46px); }
+.display-2{ font-size:clamp(24px,3.4vw,34px); }
+.lede{ color:var(--fg-2); font-size:clamp(15px,1.6vw,17px); max-width:60ch; }
+.num{ font-family:var(--font-mono); font-variant-numeric:tabular-nums; }
+.text-muted{ color:var(--fg-3); }
+.gold{ color:var(--gold-soft); }
+
+/* ---------- 4. APP SHELL ---------- */
+.app{ position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column; }
+
+.appbar{
+  position:sticky; top:0; z-index:40;
+  background:rgba(22,22,22,.82); backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border-soft);
+}
+.appbar__inner{
+  max-width:var(--wrap); margin:0 auto; padding:14px 24px;
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+}
+.brand{ display:flex; align-items:baseline; gap:12px; }
+.brand__mark{
+  font-family:var(--font-display); font-weight:600; font-size:20px; letter-spacing:.34em;
+  color:var(--gold-soft); text-transform:uppercase;
+}
+.brand__sub{ font-size:11px; letter-spacing:.16em; color:var(--fg-3); }
+.appbar__actions{ display:flex; align-items:center; gap:10px; }
+
+/* progress rail under the appbar */
+.progress{
+  max-width:var(--wrap); margin:0 auto; padding:14px 24px 4px;
+  display:flex; flex-direction:column; gap:8px;
+}
+.progress__meta{ display:flex; align-items:center; justify-content:space-between; font-size:12px; color:var(--fg-2); }
+.progress__pct{ font-family:var(--font-mono); color:var(--gold-soft); letter-spacing:.06em; }
+.progress__track{ height:4px; border-radius:99px; background:rgba(242,224,182,.10); overflow:hidden; }
+.progress__fill{
+  height:100%; width:0%; border-radius:99px;
+  background:linear-gradient(90deg,var(--gold-600),var(--gold-300));
+  transition:width .5s var(--ease);
+}
+
+.main{ flex:1; max-width:var(--wrap); width:100%; margin:0 auto; padding:36px 24px 80px; }
+.footer{
+  border-top:1px solid var(--border-soft); color:var(--fg-3); font-size:12px;
+  padding:22px 24px; text-align:center; letter-spacing:.04em;
+}
+.footer .mono{ color:var(--fg-2); }
+
+/* ---------- 5. WIZARD FRAME ---------- */
+.wizard{ max-width:var(--wizard); margin:0 auto; }
+.step{ animation:stepIn .45s var(--ease) both; }
+@keyframes stepIn{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:none; } }
+.step[hidden]{ display:none; }
+.step__head{ text-align:center; margin-bottom:26px; }
+.step__head .eyebrow{ margin-bottom:14px; }
+.step__head p{ margin:12px auto 0; }
+.wizard__nav{
+  display:flex; align-items:center; justify-content:space-between; gap:14px;
+  margin-top:28px; padding-top:22px; border-top:1px solid var(--border-soft);
+}
+.wizard__hint{ text-align:center; color:var(--warning); font-size:13px; min-height:20px; margin-top:14px; }
+
+/* ---------- 6. CARDS / PANELS ---------- */
+.card{
+  background:var(--surface); border:1px solid var(--border-soft);
+  border-radius:var(--radius-lg); box-shadow:var(--shadow-2);
+  padding:34px 34px 30px; position:relative; overflow:hidden;
+}
+.card--sow{ overflow:visible; }   /* allow position:sticky subtotal bar to pin */
+.card__glow{
+  position:absolute; inset:auto -90px -140px auto; width:320px; height:320px; border-radius:50%;
+  background:radial-gradient(circle,rgba(242,224,182,.10),transparent 70%); pointer-events:none;
+}
+.panel{
+  background:var(--surface-2); border:1px solid var(--border-soft);
+  border-radius:var(--radius-md); padding:18px 20px;
+}
+.panel--dark{ background:var(--noir-850); }
+
+/* ---------- 7. BUTTONS ---------- */
+.btn{
+  --btn-bg:transparent; --btn-fg:var(--fg); --btn-bd:var(--border-strong);
+  display:inline-flex; align-items:center; justify-content:center; gap:9px;
+  font-family:var(--font-body); font-size:15px; font-weight:600; line-height:1;
+  padding:13px 22px; border-radius:var(--radius-sm); cursor:pointer;
+  color:var(--btn-fg); background:var(--btn-bg); border:1px solid var(--btn-bd);
+  transition:transform var(--dur) var(--ease), background var(--dur), border-color var(--dur), box-shadow var(--dur);
+  -webkit-tap-highlight-color:transparent;
+}
+.btn:hover{ transform:translateY(-1px); }
+.btn:active{ transform:translateY(0); }
+.btn__icon{ width:16px; height:16px; display:inline-block; }
+.btn--primary{
+  --btn-bg:linear-gradient(135deg,var(--gold-300),var(--gold-500));
+  --btn-fg:#241d0c; --btn-bd:transparent;
+  box-shadow:0 8px 24px rgba(197,162,83,.22);
+}
+.btn--primary:hover{ box-shadow:0 12px 30px rgba(197,162,83,.30); }
+.btn--ghost{ --btn-bg:transparent; --btn-fg:var(--fg-2); --btn-bd:var(--border-soft); }
+.btn--ghost:hover{ --btn-fg:var(--fg); --btn-bd:var(--border-strong); background:rgba(242,224,182,.04); }
+.btn--subtle{ --btn-bg:var(--surface-3); --btn-fg:var(--fg); --btn-bd:var(--border-soft); }
+.btn--danger{ --btn-fg:var(--error); --btn-bd:rgba(163,70,60,.4); }
+.btn--sm{ padding:9px 14px; font-size:13px; }
+.btn--icon{ padding:10px; width:40px; height:40px; }
+.btn[disabled]{ opacity:.45; cursor:not-allowed; transform:none; box-shadow:none; }
+.btn--block{ width:100%; }
+
+/* ---------- 8. FORM CONTROLS ---------- */
+.field{ margin-bottom:20px; }
+.field__label{ display:block; font-size:14px; font-weight:600; color:var(--fg); margin-bottom:8px; }
+.field__hint{ font-size:13px; color:var(--fg-3); margin-top:7px; }
+.field__label .req{ color:var(--gold-soft); }
+
+.input, .select, .textarea{
+  width:100%; font-family:var(--font-body); font-size:15px; color:var(--fg);
+  background:var(--noir-850); border:1px solid var(--border-soft);
+  border-radius:var(--radius-sm); padding:13px 15px;
+  transition:border-color var(--dur), box-shadow var(--dur), background var(--dur);
+}
+.input::placeholder, .textarea::placeholder{ color:var(--fg-3); }
+.input:hover,.select:hover,.textarea:hover{ border-color:var(--border-strong); }
+.input:focus,.select:focus,.textarea:focus{ border-color:var(--gold-500); box-shadow:var(--ring); background:var(--noir-800); }
+.textarea{ resize:vertical; min-height:96px; line-height:1.6; }
+.select{ appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23c5a253' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:left 15px center; padding-left:40px; }
+
+/* input adornment (e.g. $ / unit) */
+.input-group{ position:relative; }
+.input-group .input{ padding-inline-start:56px; }
+.input-group__addon{
+  position:absolute; inset-inline-start:1px; top:1px; bottom:1px;
+  display:flex; align-items:center; padding:0 14px; color:var(--fg-3);
+  font-family:var(--font-mono); font-size:13px; border-inline-end:1px solid var(--border-soft);
+  border-start-start-radius:var(--radius-sm); border-end-start-radius:var(--radius-sm);
+  background:var(--noir-900);
+}
+
+/* segmented control (Rehab Condition: Light / Medium / Heavy) */
+.segmented{ display:grid; grid-auto-flow:column; grid-auto-columns:1fr; gap:8px; }
+.segmented__opt{
+  position:relative; border:1px solid var(--border-soft); border-radius:var(--radius-md);
+  background:var(--surface-2); padding:16px 14px; cursor:pointer; text-align:center;
+  transition:border-color var(--dur), background var(--dur), transform var(--dur);
+}
+.segmented__opt:hover{ transform:translateY(-2px); border-color:var(--border-strong); }
+.segmented__opt input{ position:absolute; opacity:0; inset:0; cursor:pointer; }
+.segmented__opt .t{ font-weight:600; font-size:15px; display:block; }
+.segmented__opt .d{ font-size:12px; color:var(--fg-3); margin-top:4px; display:block; }
+.segmented__opt:has(input:checked){
+  border-color:var(--gold-500); background:linear-gradient(180deg,rgba(197,162,83,.14),rgba(197,162,83,.04));
+  box-shadow:var(--ring);
+}
+.segmented__opt:has(input:checked) .t{ color:var(--gold-soft); }
+
+/* custom checkbox (SOW item selection) */
+.check{ display:inline-flex; align-items:center; gap:10px; cursor:pointer; user-select:none; }
+.check input{ position:absolute; opacity:0; }
+.check__box{
+  width:20px; height:20px; border-radius:5px; border:1px solid var(--border-strong);
+  background:var(--noir-850); display:grid; place-items:center; flex:none; transition:all var(--dur);
+}
+.check__box svg{ width:12px; height:12px; opacity:0; transform:scale(.6); transition:all var(--dur); stroke:var(--noir-900); }
+.check input:checked + .check__box{ background:linear-gradient(135deg,var(--gold-300),var(--gold-500)); border-color:transparent; }
+.check input:checked + .check__box svg{ opacity:1; transform:scale(1); }
+.check input:focus-visible + .check__box{ box-shadow:var(--ring); }
+
+/* big stat card */
+.stat{ text-align:center; padding:22px; }
+.stat__label{ font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--fg-3); }
+.stat__value{ font-family:var(--font-display); font-size:44px; color:var(--gold-soft); line-height:1; margin-top:8px; }
+.stat__sub{ font-size:12px; color:var(--fg-3); margin-top:8px; }
+
+/* ---------- 10. GUIDANCE TIPS / BADGES ---------- */
+.tip{
+  display:inline-flex; align-items:center; gap:7px; font-size:11.5px; font-weight:600;
+  padding:4px 10px; border-radius:99px; border:1px solid transparent; line-height:1.3;
+}
+.tip::before{ content:''; width:6px; height:6px; border-radius:50%; background:currentColor; flex:none; }
+.tip--must   { color:var(--error);   background:rgba(163,70,60,.12);  border-color:rgba(163,70,60,.28); }
+.tip--comps  { color:var(--warning); background:rgba(192,138,62,.12); border-color:rgba(192,138,62,.28); }
+.tip--verify { color:var(--info);    background:rgba(74,108,122,.14); border-color:rgba(74,108,122,.30); }
+.tip--good   { color:var(--success); background:rgba(91,138,90,.12);  border-color:rgba(91,138,90,.28); }
+
+.chip{ display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--fg-2); background:var(--surface-3); border:1px solid var(--border-soft); padding:5px 11px; border-radius:99px; }
+.chip .mono{ color:var(--gold-soft); }
+
+/* callout / alert */
+.callout{ display:flex; gap:12px; padding:14px 16px; border-radius:var(--radius-md); border:1px solid; font-size:14px; align-items:flex-start; }
+.callout__icon{ flex:none; margin-top:2px; }
+.callout--info   { color:var(--fg); background:rgba(74,108,122,.10); border-color:rgba(74,108,122,.32); }
+.callout--warning{ color:var(--fg); background:rgba(192,138,62,.10); border-color:rgba(192,138,62,.34); }
+
+/* ---------- 11. UTILITIES / GRID ---------- */
+.grid{ display:grid; gap:18px; }
+.grid-2{ grid-template-columns:repeat(2,1fr); }
+.grid-3{ grid-template-columns:repeat(3,1fr); }
+.stack > * + *{ margin-top:14px; }
+.row{ display:flex; align-items:center; gap:12px; }
+.between{ justify-content:space-between; }
+.wrap{ flex-wrap:wrap; }
+.divider{ height:1px; background:var(--border-soft); margin:22px 0; border:0; }
+.hidden{ display:none !important; }
+
+/* ---------- 12. SOW SCREEN (Phase 2 — Scope of Work) ---------- */
+/* toolbar */
+.sow-toolbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+.sow-toolbar__links{ display:flex; gap:8px; }
+
+/* category accordion */
+.cat{ border:1px solid var(--border-soft); border-radius:var(--radius-md); overflow:hidden; background:var(--surface); }
+.cat + .cat{ margin-top:12px; }
+.cat.has-selected{ border-color:rgba(197,162,83,.28); }
+.cat__head{ width:100%; display:flex; align-items:center; gap:14px; padding:15px 18px; background:transparent; border:none; cursor:pointer; color:var(--fg); text-align:start; font-family:var(--font-body); }
+.cat__head:hover{ background:rgba(242,224,182,.03); }
+.cat__chev{ flex:none; color:var(--gold-soft); transition:transform .3s var(--ease); }
+.cat.open .cat__chev{ transform:rotate(180deg); }
+.cat__titles{ flex:1; min-width:0; }
+.cat__title-he{ font-weight:600; font-size:16px; line-height:1.2; }
+.cat__title-en{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:.16em; color:var(--fg-3); text-transform:uppercase; }
+.cat__meta{ display:flex; align-items:center; gap:14px; flex:none; }
+.cat__count{ font-size:12px; color:var(--fg-3); white-space:nowrap; }
+.cat__count b{ color:var(--gold-soft); }
+.cat__subtotal{ font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--gold-soft); font-size:15px; min-width:74px; text-align:end; }
+.cat__body{ padding:8px 14px 16px; }
+.cat__body[hidden]{ display:none; }
+
+/* item row */
+.sow-item{ display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:11px 14px; border:1px solid var(--border-soft); border-radius:10px; background:var(--surface-2); transition:border-color var(--dur), background var(--dur), opacity var(--dur); }
+.sow-item + .sow-item{ margin-top:8px; }
+.sow-item.on{ border-color:rgba(197,162,83,.38); background:linear-gradient(180deg,rgba(197,162,83,.05),transparent); }
+.sow-item.off{ opacity:.62; }
+.sow-item__check{ flex:none; }
+.sow-item__body{ flex:1 1 240px; min-width:0; }
+.sow-item__name{ font-weight:500; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.sow-item__unit{ font-family:var(--font-mono); font-size:10px; letter-spacing:.06em; color:var(--gold-soft); background:rgba(242,224,182,.08); border:1px solid var(--border-soft); padding:2px 7px; border-radius:5px; }
+.sow-item__note{ font-size:12px; color:var(--fg-3); margin-top:3px; }
+.sow-item__controls{ display:flex; align-items:center; gap:10px; margin-inline-start:auto; flex-wrap:wrap; }
+.sow-item__op{ color:var(--fg-3); font-family:var(--font-mono); }
+.sow-item__total{ min-width:88px; text-align:end; font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--gold-soft); font-size:15px; }
+.sow-item.off .sow-item__total{ color:var(--fg-3); }
+.sow-field-lbl{ display:block; font-size:9.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-3); margin-bottom:4px; text-align:center; }
+
+/* qty + price mini controls */
+.mini{ display:inline-flex; align-items:stretch; border:1px solid var(--border-soft); border-radius:7px; overflow:hidden; background:var(--noir-850); height:38px; }
+.mini:focus-within{ border-color:var(--gold-500); box-shadow:var(--ring); }
+.mini button{ width:32px; border:none; background:transparent; color:var(--gold-soft); font-size:17px; cursor:pointer; transition:background var(--dur); }
+.mini button:hover{ background:rgba(242,224,182,.06); }
+.mini button:disabled{ color:var(--fg-3); cursor:not-allowed; }
+.mini input{ width:58px; border:none; background:transparent; color:var(--fg); text-align:center; font-family:var(--font-mono); font-variant-numeric:tabular-nums; }
+.mini input:focus{ outline:none; }
+.mini input:disabled{ color:var(--fg-3); }
+.mini__affix{ display:flex; align-items:center; padding:0 9px; font-family:var(--font-mono); font-size:11px; color:var(--fg-3); background:var(--noir-900); }
+.mini__affix--unit{ color:var(--gold-soft); border-inline-start:1px solid var(--border-soft); }
+.mini__affix--cur{ border-inline-end:1px solid var(--border-soft); }
+.mini--price input{ width:66px; }
+
+/* custom (miscellaneous) rows */
+.misc-row{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:11px 14px; border:1px solid var(--border-soft); border-radius:10px; background:var(--surface-2); }
+.misc-row + .misc-row{ margin-top:8px; }
+.misc-row .input{ padding:9px 11px; }
+.misc-row__name{ flex:1 1 180px; min-width:0; }
+.misc-add{ margin-top:10px; }
+
+/* sticky stage subtotal */
+.sow-sticky{ position:sticky; bottom:0; z-index:20; margin-top:18px; padding-bottom:2px;
+  background:linear-gradient(0deg, var(--surface) 62%, rgba(32,32,32,0)); }
+.sow-sticky__bar{ display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:14px 18px;
+  border:1px solid var(--border-strong); border-radius:var(--radius-md); background:var(--noir-850); box-shadow:var(--shadow-2); }
+.sow-sticky__info{ display:flex; flex-direction:column; gap:2px; }
+.sow-sticky__count{ font-size:13px; color:var(--fg-2); }
+.sow-sticky__total{ margin-inline-start:auto; text-align:end; }
+.sow-sticky__total .lbl{ font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--fg-3); }
+.sow-sticky__total .val{ font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:26px; color:var(--gold-soft); line-height:1; }
+.sow-sticky__actions{ display:flex; gap:10px; }
+
+.link-btn{ background:none; border:none; color:var(--fg-3); font-family:var(--font-body); font-size:12.5px; cursor:pointer; padding:4px 8px; border-radius:6px; }
+.link-btn:hover{ color:var(--gold-soft); background:rgba(242,224,182,.05); }
+
+/* ---------- 12b. RESULTS DASHBOARD (Phase 3) ---------- */
+.res-header{ text-align:center; margin-bottom:22px; padding-bottom:20px; border-bottom:1px solid var(--border-soft); }
+.res-header__addr{ font-family:var(--font-display); font-size:clamp(22px,3vw,30px); font-weight:600; color:var(--fg); line-height:1.2; }
+.res-header__meta{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:12px; }
+
+.res-kpis{ margin-bottom:26px; }
+.kpi{ padding:22px 18px; }
+.kpi .stat__value{ font-size:clamp(28px,4vw,36px); }
+.kpi--primary{ border-color:rgba(197,162,83,.42); background:linear-gradient(180deg,rgba(197,162,83,.12),rgba(197,162,83,.02)); box-shadow:0 0 0 1px rgba(197,162,83,.10), var(--shadow-1); }
+.kpi--primary .stat__value{ font-size:clamp(36px,5vw,48px); }
+.kpi--primary .stat__label{ color:var(--gold-soft); }
+
+.res-cat{ border:1px solid var(--border-soft); border-radius:var(--radius-md); background:var(--surface); margin-bottom:14px; overflow:hidden; }
+.res-cat__head{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 18px; background:var(--noir-850); border-bottom:1px solid var(--border-soft); }
+.res-cat__titles{ min-width:0; }
+.res-cat__he{ font-weight:600; font-size:16px; }
+.res-cat__en{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:.16em; color:var(--fg-3); text-transform:uppercase; margin-inline-start:8px; }
+.res-cat__sub{ font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--gold-soft); font-size:16px; white-space:nowrap; }
+.res-cat__items{ padding:10px 14px 14px; }
+
+.res-empty{ text-align:center; padding:44px 20px; color:var(--fg-3); }
+.res-empty .eyebrow{ justify-content:center; margin-bottom:10px; }
+
+/* ---------- 13. RESPONSIVE ---------- */
+@media (max-width:820px){
+  .grid-2,.grid-3{ grid-template-columns:1fr; }
+  .main{ padding:24px 16px 64px; }
+  .card{ padding:24px 20px; }
+  .appbar__inner{ padding:12px 16px; }
+  .brand__sub{ display:none; }
+  .segmented{ grid-auto-flow:row; }
+  .cat__body{ padding:8px 10px 14px; }
+  .sow-item__controls{ width:100%; margin-inline-start:0; justify-content:space-between; }
+  .sow-item__body{ flex-basis:100%; }
+  .sow-sticky__total{ margin-inline-start:0; }
+  .sow-sticky__actions{ width:100%; }
+  .sow-sticky__actions .btn{ flex:1; }
+}
+@media (max-width:520px){
+  .wizard__nav{ flex-direction:column-reverse; }
+  .wizard__nav .btn{ width:100%; }
+  .brand__mark{ font-size:16px; letter-spacing:.24em; }
+  .cat__meta{ gap:8px; }
+  .cat__count{ display:none; }
+  .sow-field-lbl{ display:none; }
+}
+
+/* reduced motion */
+@media (prefers-reduced-motion:reduce){
+  *{ animation:none !important; transition:none !important; scroll-behavior:auto; }
+}
+
+/* ---------- 14. MODAL (confirm dialog) ---------- */
+.modal{ position:fixed; inset:0; z-index:100; display:grid; place-items:center; padding:20px; }
+.modal[hidden]{ display:none; }
+.modal__backdrop{ position:absolute; inset:0; background:rgba(10,10,10,.72); backdrop-filter:blur(4px); animation:fadeIn .2s var(--ease); }
+.modal__dialog{ position:relative; width:100%; max-width:440px; background:var(--surface); border:1px solid var(--border-strong); border-radius:var(--radius-lg); box-shadow:var(--shadow-3); padding:30px 28px 24px; text-align:center; animation:stepIn .3s var(--ease) both; }
+.modal__icon{ width:52px; height:52px; margin:0 auto 16px; border-radius:50%; display:grid; place-items:center; color:var(--warning); background:rgba(192,138,62,.14); border:1px solid rgba(192,138,62,.34); }
+.modal__title{ font-family:var(--font-display-he); font-size:24px; font-weight:600; margin-bottom:8px; }
+.modal__text{ color:var(--fg-2); font-size:15px; line-height:1.7; margin-bottom:22px; }
+.modal__actions{ display:flex; gap:10px; justify-content:center; }
+@keyframes fadeIn{ from{ opacity:0; } to{ opacity:1; } }
+
+/* ---------- 15. PRINT (clean paginated doc from the Results Dashboard) ---------- */
+@media print{
+  /* recolor the dark theme to an ink-friendly light document via tokens */
+  :root{
+    --bg:#fff; --surface:#fff; --surface-2:#faf8f2; --surface-3:#f2ede0;
+    --noir-900:#ffffff; --noir-850:#faf8f2; --noir-800:#ffffff;
+    --fg:#1f1f1f; --fg-2:#3a3a3a; --fg-3:#7a6a54; --gold-soft:#876830;
+    --border-soft:#e6dcc6; --border-strong:#d8c49e;
+  }
+  html,body{ background:#fff !important; color:#1f1f1f; }
+  body::before{ display:none; }
+  /* hide all web chrome */
+  .appbar, .footer, .wizard__nav, .sow-sticky, .sow-toolbar, .btn, .link-btn, .modal{ display:none !important; }
+  .step[hidden]{ display:none !important; }
+  .main{ padding:0; max-width:none; }
+  .card{ box-shadow:none; border:none; padding:0; overflow:visible; }
+  .card__glow{ display:none; }
+  .step{ animation:none; }
+  .panel--dark{ background:#faf8f2 !important; }
+  .kpi--primary{ background:#f7edd2 !important; box-shadow:none; }
+  .res-kpis, .kpi, .res-cat, .sow-item{ break-inside:avoid; }
+  .res-cat, .kpi, .panel{ border:1px solid #e6dcc6 !important; }
+  /* render editable inputs as plain, borderless values */
+  .mini{ border:none !important; background:transparent !important; height:auto; box-shadow:none; }
+  .mini button{ display:none !important; }
+  .mini input{ color:#1f1f1f !important; width:auto; min-width:34px; }
+  .mini__affix{ background:transparent !important; }
+  .textarea{ border:1px solid #d8c49e !important; color:#1f1f1f !important; background:#fff !important; }
+  .sow-field-lbl{ display:none; }
+  a[href]::after{ content:''; }
+  @page{ margin:14mm; }
+}
+</style>
+<!-- ExcelJS (styled .xlsx generation, client-side, no build step) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ APP BAR ============ -->
+  <header class="appbar">
+    <div class="appbar__inner">
+      <div class="brand">
+        <span class="brand__mark">The Multi Academy</span>
+        <span class="brand__sub">מחשבון שיפוצים</span>
+      </div>
+      <div class="appbar__actions">
+        <button class="btn btn--ghost btn--sm" type="button" id="btnNewReport">
+          <svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+          התחל דוח חדש
+        </button>
+      </div>
+    </div>
+
+    <!-- progress rail -->
+    <div class="progress" id="progress">
+      <div class="progress__meta">
+        <span class="progress__pct" id="progressPct">0%</span>
+        <span id="progressLabel">שלב 1 מתוך 4 — פרטי הנכס</span>
+      </div>
+      <div class="progress__track"><div class="progress__fill" id="progressFill"></div></div>
+    </div>
+  </header>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+
+
+    <!-- ============ WIZARD ============ -->
+    <div class="wizard" id="wizard">
+
+      <!-- ---- STEP 1 · Property Details ---- -->
+      <section class="step" id="step-1" data-step="1">
+        <form class="card" id="propertyForm" novalidate>
+          <div class="card__glow"></div>
+
+          <div class="step__head">
+            <span class="eyebrow center">Property Details · שלב 1</span>
+            <h1 class="display-1 serif">פרטי הנכס</h1>
+            <p class="lede">נתחיל בפרטים הבסיסיים של הנכס. השטח הבנוי ומצב השיפוץ שתבחרו
+              יגדירו אוטומטית את רשימת העבודות המומלצת — שתמיד ניתן לערוך בהמשך.</p>
+          </div>
+
+          <!-- Address -->
+          <div class="field">
+            <label class="field__label" for="f-address">כתובת הנכס <span class="req">*</span></label>
+            <input class="input" id="f-address" name="address" type="text" autocomplete="off"
+                   placeholder="123 Main St, City, State" required aria-required="true">
+            <div class="field__hint" data-err="address"></div>
+          </div>
+
+          <!-- SQFT + Floors -->
+          <div class="grid grid-2" style="gap:16px;">
+            <div class="field" style="margin:0;">
+              <label class="field__label" for="f-sqft">שטח בנוי (SQFT) <span class="req">*</span></label>
+              <div class="input-group">
+                <span class="input-group__addon">SF</span>
+                <input class="input" id="f-sqft" name="sqft" type="number" inputmode="numeric"
+                       min="1" step="1" placeholder="1,600" required aria-required="true">
+              </div>
+              <div class="field__hint" data-err="sqft">קובע את הכמות ההתחלתית לפריטים מבוססי שטח (צביעה, ריצוף).</div>
+            </div>
+            <div class="field" style="margin:0;">
+              <label class="field__label" for="f-floors">מספר קומות</label>
+              <select class="select" id="f-floors" name="floors">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4+</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Lot SQFT -->
+          <div class="field">
+            <label class="field__label" for="f-lot">שטח מגרש (Lot SQFT)</label>
+            <div class="input-group">
+              <span class="input-group__addon">SF</span>
+              <input class="input" id="f-lot" name="lotSqft" type="number" inputmode="numeric"
+                     min="1" step="1" placeholder="לא חובה">
+            </div>
+            <div class="field__hint" data-err="lotSqft"></div>
+          </div>
+
+          <hr class="divider">
+
+          <!-- Rehab Condition -->
+          <div class="field" style="margin:0;">
+            <label class="field__label">מצב השיפוץ <span class="req">*</span></label>
+            <div class="segmented" id="conditionGroup" role="radiogroup" aria-label="מצב השיפוץ">
+              <label class="segmented__opt">
+                <input type="radio" name="condition" value="light">
+                <span class="t">קל</span><span class="d">רענון קוסמטי</span>
+              </label>
+              <label class="segmented__opt">
+                <input type="radio" name="condition" value="medium">
+                <span class="t">בינוני</span><span class="d">שיפוץ חלקי</span>
+              </label>
+              <label class="segmented__opt">
+                <input type="radio" name="condition" value="heavy">
+                <span class="t">כבד</span><span class="d">שיפוץ יסודי</span>
+              </label>
+            </div>
+
+            <div class="callout callout--info" style="margin-top:16px;">
+              <svg class="callout__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+              <span id="tierPreviewText">בחרו מצב שיפוץ — נסמן עבורכם אוטומטית את פריטי העבודה המתאימים, וניתן לשנות ידנית בהמשך.</span>
+            </div>
+            <div class="field__hint" data-err="condition"></div>
+          </div>
+
+          <div class="wizard__hint" id="formHint">&nbsp;</div>
+
+          <div class="wizard__nav">
+            <button class="btn btn--ghost" type="button" id="btnBack" disabled>
+              חזרה
+              <svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </button>
+            <button class="btn btn--primary" type="submit" id="btnNext" disabled>
+              <svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+              המשך לבחירת עבודות
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ---- STEP 2 · Scope of Work (SOW) selection ---- -->
+      <section class="step" id="step-2" data-step="2" hidden>
+        <div class="card card--sow">
+          <div class="step__head">
+            <span class="eyebrow center">Scope of Work · שלב 2</span>
+            <h1 class="display-1 serif">בחירת עבודות</h1>
+            <p class="lede">סימנו עבורכם פריטים מומלצים לפי מצב השיפוץ. הוסיפו או הסירו פריטים,
+              וערכו כמויות ומחירים — הסכום מתעדכן מיד. ההנחיות המקצועיות מופיעות ליד כל פריט.</p>
+          </div>
+
+          <div class="sow-toolbar">
+            <div class="chip" id="sowSelectedChip">נבחרו <span class="mono" id="sowChipCount">0</span> פריטים</div>
+            <div class="sow-toolbar__links">
+              <button class="link-btn" type="button" id="sowExpandAll">הרחב הכל</button>
+              <button class="link-btn" type="button" id="sowCollapseAll">כווץ הכל</button>
+            </div>
+          </div>
+
+          <div id="sowList"><!-- categories rendered by controller --></div>
+
+          <!-- sticky running subtotal + navigation -->
+          <div class="sow-sticky">
+            <div class="sow-sticky__bar">
+              <div class="sow-sticky__info">
+                <span class="eyebrow">Selected Scope</span>
+                <span class="sow-sticky__count"><b class="mono" id="sowCount">0</b> פריטי עבודה נבחרו</span>
+              </div>
+              <div class="sow-sticky__total">
+                <div class="lbl">סה"כ עלות עבודות</div>
+                <div class="val" id="sowSubtotal">$0</div>
+              </div>
+              <div class="sow-sticky__actions">
+                <button class="btn btn--ghost" type="button" id="btnBack2">
+                  חזרה
+                  <svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                </button>
+                <button class="btn btn--primary" type="button" id="btnToResults">
+                  <svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+                  המשך לתוצאות
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---- STEP 3 · Results Dashboard ---- -->
+      <section class="step" id="step-3" data-step="3" hidden>
+        <div class="card">
+          <div class="card__glow"></div>
+          <div class="step__head">
+            <span class="eyebrow center">Results · שלב 3</span>
+            <h1 class="display-1 serif">סיכום עלויות השיפוץ</h1>
+            <p class="lede">סיכום היקף העבודה והעלות. אפשר לבצע כאן התאמות אחרונות של כמויות ומחירים —
+              המדדים למעלה מתעדכנים מיד. זהו המסמך שתשתפו עם הקבלן.</p>
+          </div>
+
+          <div class="res-header">
+            <div class="res-header__addr" id="resAddr"><bdi>—</bdi></div>
+            <div class="res-header__meta" id="resMeta"></div>
+          </div>
+
+          <div class="grid grid-3 res-kpis">
+            <div class="panel panel--dark stat kpi kpi--primary">
+              <div class="stat__label">Grand Total · סה"כ</div>
+              <div class="stat__value num" id="kpiGrand">$0</div>
+              <div class="stat__sub">עלות שיפוץ כוללת</div>
+            </div>
+            <div class="panel panel--dark stat kpi">
+              <div class="stat__label">Cost / SQFT</div>
+              <div class="stat__value num" id="kpiPerSqft">$0</div>
+              <div class="stat__sub" id="kpiSqftSub">— SF</div>
+            </div>
+            <div class="panel panel--dark stat kpi">
+              <div class="stat__label">Selected Items · פריטים</div>
+              <div class="stat__value num" id="kpiCount">0</div>
+              <div class="stat__sub">פריטי עבודה נבחרו</div>
+            </div>
+          </div>
+
+          <div class="eyebrow" style="margin:4px 0 14px;">Scope of Work · פירוט העבודות</div>
+          <div id="resBreakdown"><!-- rendered by controller --></div>
+
+          <div class="field" style="margin-top:24px;">
+            <label class="field__label" for="res-remarks">הערות כלליות לשיפוץ · <span class="mono" style="font-size:12px;color:var(--fg-3)">Project Remarks &amp; Scope Notes</span></label>
+            <textarea class="textarea" id="res-remarks" placeholder="הוסיפו הערות, הנחות עבודה, או הבהרות לקבלן — הטקסט יישמר ויעבור לייצוא."></textarea>
+          </div>
+
+          <div class="wizard__nav">
+            <button class="btn btn--ghost" type="button" id="btnBack3">
+              חזרה לבחירת עבודות
+              <svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </button>
+            <button class="btn btn--primary" type="button" id="btnExport">
+              <svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
+              ייצוא לאקסל
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="footer">
+    The Multi Academy · מחשבון שיפוצים · <span class="mono">Rehab Cost Calculator</span>
+  </footer>
+
+  <!-- ============ RESET CONFIRM MODAL ============ -->
+  <div class="modal" id="resetModal" hidden role="dialog" aria-modal="true" aria-labelledby="resetTitle">
+    <div class="modal__backdrop" data-role="modal-cancel"></div>
+    <div class="modal__dialog">
+      <div class="modal__icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+      </div>
+      <div class="modal__title" id="resetTitle">להתחיל דוח חדש?</div>
+      <p class="modal__text">כל הנתונים שהוזנו — פרטי הנכס, הפריטים שנבחרו, הכמויות, המחירים וההערות — יימחקו לצמיתות. לא ניתן לבטל פעולה זו.</p>
+      <div class="modal__actions">
+        <button class="btn btn--ghost" type="button" data-role="modal-cancel">ביטול</button>
+        <button class="btn btn--danger" type="button" id="btnConfirmReset">כן, התחל מחדש</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- =====================================================================
+     STEP 2 — DATA LAYER & CALCULATION ENGINE
+     Pure data + state + math. NO wizard/form UI wired here yet (Step 3+).
+     Everything is exposed on window.RehabApp for use by later steps.
+     ===================================================================== -->
+<script>
+(function(){
+  'use strict';
+
+  /* ---------- helpers ---------- */
+  const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  const round2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
+
+  /* Tip taxonomy → drives label + color (matches Step-1 CSS .tip--*) */
+  const TIP = {
+    must:   { cls:'tip--must',   label:'Must have' },
+    comps:  { cls:'tip--comps',  label:'Only if comps support' },
+    verify: { cls:'tip--verify', label:'Verify quantity' },
+    good:   { cls:'tip--good',   label:'Recommended' }
+  };
+
+  /* Rehab tiers (cumulative): Heavy ⊇ Medium ⊇ Light */
+  const TIER_RANK = { light:1, medium:2, heavy:3 };
+
+  /* ---------------------------------------------------------------
+     RAW CATALOG — transcribed 1:1 from "the_rehab_exel".
+     Row shape: [name, unit, labor, minTier, tipType, autoQty, note?]
+       unit    : 'EA'|'SF'|'LF'|'CY'|'Square'|'GENERAL'|'GEN.'|'UNIT'|null(checklist)
+       labor   : $ per unit (materials are 0 across the sheet)
+       minTier : lowest condition that auto-selects it ('light'|'medium'|'heavy') or null(never)
+       tipType : key into TIP, or null
+       autoQty : number | 'sqft' (use property sqft) | null (blank → user must verify)
+     --------------------------------------------------------------- */
+  const RAW = [
+    { key:'photos', title:'PHOTOS / VIDEO', titleHe:'צילום ותיעוד', type:'checklist', items:[
+      ['Take Exterior Photos',              null, 0, 'light','must', null],
+      ['Take Room by Room Interior Photos', null, 0, 'light','must', null],
+      ['Take Video of Exterior and Interior',null,0, 'light','must', null],
+    ]},
+
+    { key:'demo', title:'DEMO', titleHe:'הריסה', items:[
+      ['Demo', 'UNIT', 900, 'heavy','verify', 1, 'הריסה/פינוי — רק בשיפוץ יסודי; אמת היקף.'],
+    ]},
+
+    { key:'exterior', title:'EXTERIOR', titleHe:'חוץ', items:[
+      ['Lawn Maintenance w/ Shrubs (all inclusive)', 'GENERAL', 150, null,   'comps',  1],
+      ['Lawn Maintenance Only',                      'GENERAL', 45,  'light','good',   1, 'רושם ראשוני זול וחשוב (Curb appeal).'],
+      ['Mailbox w/ Install',                         'EA',      350, null,   'good',   1],
+      ['3 Step Exterior Stairway',                   'EA',      500, null,   'verify', null],
+      ['Gutters Remove and Install 5"',              'LF',      9,   null,   'verify', null],
+      ['Chain Link Fence Replacement / Install',     'LF',      10,  null,   'comps',  null],
+      ['Wood Fence Replacement / Install',           'LF',      15,  null,   'comps',  null],
+      ['Pressure Wash -House, Driveway, Walkway',    'GENERAL', 350, 'light','must',   1, 'ניקוי בלחץ — שדרוג זול עם החזר גבוה.'],
+      ['Pressure Wash – House',                      'GENERAL', 2500,null,   'comps',  1],
+      ['Pressure Wash - Only Driveway, Walkway',     'GENERAL', 150, null,   'good',   1],
+      ['Debris Removal – Exterior',                  'CY',      60,  'heavy','verify', null],
+      ['Facia Replacement Inc Material',             'LF',      5,   null,   'verify', null],
+      ['Soffit Replacement Inc Material',            'LF',      5,   null,   'verify', null],
+      ['Vinyl Siding Inc Materials',                 'Square',  250, null,   'comps',  null, 'יקר — רק אם ה-comps תומכים.'],
+      ['36" Screen Door replacement',                'EA',      400, null,   'good',   null],
+      ['Porch railing',                              '38" x 6\' EA', 250, null,'verify',null],
+      ['Porch Column',                               'EA',      250, null,   'verify', null],
+    ]},
+
+    { key:'kitchen', title:'KITCHEN', titleHe:'מטבח', items:[
+      ['Basic Cabinets',                 'LF', 400, 'medium','must',   null, 'מטבח מוכר את הבית — מדוד אורך רץ (LF).'],
+      ['Cabinet Knobs',                  'EA', 2,   null,    'good',   null],
+      ['Cabinet Handles',                'EA', 3,   'medium','good',   null, 'ידיות/כפתורים — התאם לכמות הדלתות/מגירות.'],
+      ['Formica Countertop Including Labor','LF',40,'medium','must',   null],
+      ['Kitchen Sink (Double Steel)',    'EA', 350, 'medium','must',   1],
+      ['Kitchen Faucet',                 'EA', 100, 'medium','must',   1],
+      ['Refrigerator',                   'EA', 1000,null,    'comps',  null],
+      ['Stove/Range',                    'EA', 600, null,    'comps',  null],
+      ['Vent Hood (basic 30")',          'EA', 250, null,    'comps',  null],
+    ]},
+
+    { key:'bathroom', title:'BATHROOM(S)', titleHe:'חדרי רחצה', items:[
+      ['Medicine Cabinet Inc Installation',                         'EA', 150, 'medium','good',  1],
+      ['Bathtub Faucet combo Inc Installation',                     'EA', 200, 'medium','good',  1],
+      ['Vanity Cabintet Replacement (with sink) Inc Installation',  'EA', 350, 'medium','must',  1],
+      ['Vanity Faucet only Inc Installation',                       'EA', 65,  null,    'good',   null],
+      ['Vanity Sink only EA Inc Installation',                      'EA', 120, null,    'good',   null],
+      ['Toilet w/ Install',                                         'EA', 250, 'medium','must',  1],
+      ['Tub Refinish - Paint Epoxy',                                'EA', 300, 'medium','good',  1, 'זול משמעותית מהחלפה — שקול לפני החלפת אמבט.'],
+      ['Shower Tile Refinish - Paint Epoxy',                        'EA', 350, 'medium','good',  1],
+      ['Replace bath tab Inc Surrounds',                            'EA', 1300,null,    'comps',  null],
+    ]},
+
+    { key:'doors', title:'DOORS', titleHe:'דלתות', items:[
+      ['Interior Door',                                'EA', 220, 'medium','verify', null],
+      ['Exterior Door (Solid Core Flat) Inc Installation','EA',500,'medium','good',  1],
+      ['Interior Exterior Doorknob',                   'EA', 80,  'medium','verify', null],
+      ['Interior Exterior Deadbolt',                   'EA', 80,  'medium','verify', null],
+      ['Lockbox',                                      'EA', 45,  'light', 'must',   1, 'נדרש לגישת קבלנים/מתווכים.'],
+      ['Garage Door (single)',                         'EA', 1200,null,    'comps',  null],
+      ['Garage Door (double)',                         'EA', 2000,null,    'comps',  null],
+    ]},
+
+    { key:'flooring', title:'FLOORING', titleHe:'ריצוף', items:[
+      ['LVP Including Inc instllation',        'SF', 4.5, 'medium','must',  'sqft', 'ברירת מחדל עמידה ומבוקשת — מדוד שטח בפועל.'],
+      ['Carpet (with pad) Including instllation','SF',3.2, null,   'comps',  null],
+    ]},
+
+    { key:'electrical', title:'ELECTRICAL', titleHe:'חשמל', items:[
+      ['Bathroom (mirror light)',           'EA', 100, 'medium','good',   1],
+      ['Ceiling Fan',                       'EA', 170, 'medium','verify', null],
+      ['Flushmount light fixture',          'EA', 60,  'medium','verify', null],
+      ['Standard Switch',                   'EA', 15,  'medium','verify', null],
+      ['Standard Outlet',                   'EA', 12,  'medium','verify', null],
+      ['Standard GFCI Outlet',              'EA', 30,  'medium','must',   null, 'נדרש לפי תקן ליד מים (מטבח/אמבט).'],
+      ['Outlet / Switch Plate Cover',       'EA', 12,  'light', 'good',   null, 'ריענון זול ומהיר.'],
+      ['Complete Replacement (subjective)', 'EA', 3750,null,    'comps',  null],
+      ['Smoke Detector (Kidde i9010)',      'EA', 30,  'light', 'must',   null, 'חובה לפי תקן — אמת כמות לפי חדרי שינה.'],
+      ['CO2 Detector',                      'EA', 30,  'light', 'must',   null, 'חובה לפי תקן.'],
+    ]},
+
+    { key:'appliances', title:'OTHER APPLIANCES', titleHe:'מערכות ומכשירים', items:[
+      ['Water Heater (40 gal)',                    'EA', 1500, 'heavy','verify', 1, 'רק אם ישן/תקול.'],
+      ['Furnace replacement including material',   'EA', 5000, null,   'comps',  null],
+      ['3 ton Full System Install (existing ducts)','EA',6000, null,   'comps',  null],
+      ['3 ton Full System Install (new ductwork)', 'EA', 10000,null,   'comps',  null],
+      ['HVAC Condensor Cage',                      'EA', 500,  null,   'good',   null],
+      ['Garage Door Opener',                       'EA', 500,  null,   'good',   null],
+    ]},
+
+    { key:'painting', title:'PAINTING', titleHe:'צביעה', items:[
+      ['Interior Paint Gray walls white trims and Ceilings','SF',2.5,'light','must','sqft','כמעט תמיד משתלם — הרושם הגדול ביותר לכל דולר.'],
+      ['Exterior Paint',                                    'SF',2.5,null,   'comps', null],
+    ]},
+
+    { key:'interior', title:'INTERIOR (OTHER)', titleHe:'פנים (שונות)', items:[
+      ['Drywall Install / Replace (inc. materials)',  'SF', 6,   'heavy','verify', null],
+      ['Wall Framing',                                'SF', 6,   'heavy','verify', null],
+      ['Basic Subway Wall Tile',                      'SF', 20,  null,   'comps',  null],
+      ['Basic Baseboards/Trims PVC/Polystyrene',      'LF', 3,   'medium','good',  null],
+      ['Basic Blinds',                                'LF', 100, 'light', 'good',  null],
+      ['Vertical Blinds',                             'LF', 130, null,    'good',   null],
+      ['Complete Replumb (Subjective)',               'GEN.',7000,null,   'comps',  null, 'סובייקטיבי ויקר — אמת מול הצנרת בפועל.'],
+      ['Debris Removal – Interior',                   'CY', 45,  'heavy','verify', null],
+      ['Window Replacement (Subjective)',             'EA', 360, null,    'comps',  null],
+      ['Replace drop cielling tiles',                 'EA', 10,  null,    'verify', null],
+    ]},
+
+    { key:'cleaning', title:'CLEANING', titleHe:'ניקיון', items:[
+      ['Carpet Cleaning - 1 Room',                'EA', 80,  null,    'good',   null],
+      ['Carpet Cleaning - 2 Rooms',               'EA', 100, null,    'good',   null],
+      ['Carpet Cleaning - 3 Rooms',               'EA', 125, null,    'good',   null],
+      ['Carpet Cleaning - # of additional rooms', 'EA', 250, null,    'good',   null],
+      ['Tile Cleaning',                           'SF', 2,   'light', 'good',   null],
+      ['After Rehab Deep Cleaning',               'EA', 200, 'light', 'must',   1, 'ניקיון עמוק לפני צילום/מכירה — חובה.'],
+    ]},
+
+    { key:'misc', title:'MISCELLANEOUS', titleHe:'שונות', custom:true, items:[] },
+  ];
+
+  /* ---------- build normalized catalog (assign ids) ---------- */
+  const CATEGORIES = RAW.map(cat => ({
+    key: cat.key,
+    title: cat.title,
+    titleHe: cat.titleHe,
+    type: cat.type || 'items',
+    custom: !!cat.custom,
+    items: cat.items.map(row => {
+      const [name, unit, labor, minTier, tipType, autoQty, note] = row;
+      return {
+        id: cat.key + ':' + slug(name),
+        category: cat.key,
+        name,
+        unit: unit,
+        labor: labor || 0,
+        materials: 0,                       // materials column is empty across the sheet
+        get unitPrice(){ return this.labor + this.materials; },
+        minTier: minTier || null,
+        tip: tipType ? { type:tipType, cls:TIP[tipType].cls, label:TIP[tipType].label } : null,
+        note: note || null,
+        autoQty: (autoQty === undefined ? null : autoQty),
+        isTask: cat.type === 'checklist'
+      };
+    })
+  }));
+
+  /* flat index for quick lookups */
+  const ITEM_INDEX = {};
+  CATEGORIES.forEach(c => c.items.forEach(it => { ITEM_INDEX[it.id] = it; }));
+
+  function findItem(catKey, nameIncludes){
+    const c = CATEGORIES.find(c => c.key === catKey);
+    return c && c.items.find(it => it.name.toLowerCase().includes(nameIncludes.toLowerCase()));
+  }
+
+  /* ---------------------------------------------------------------
+     STATE MODEL
+     property + per-item overrides + runtime custom rows.
+     overrides[id] = { selected, qty, labor?, materials? }  (labor/materials
+     optional → fall back to catalog defaults, so prices stay fully editable).
+     --------------------------------------------------------------- */
+  function createState(){
+    return {
+      property: { address:'', contractor:'', sqft:1600, floors:1, lotSqft:null, condition:null },
+      overrides: {},                 // id -> { selected, qty, labor, materials }
+      customItems: [],               // { id, name, unit, qty, labor, materials }
+      remarks: ''
+    };
+  }
+
+  /* resolve the effective values for a catalog item given state */
+  function effective(item, state){
+    const o = state.overrides[item.id] || {};
+    return {
+      selected: !!o.selected,
+      qty:      (o.qty      != null ? o.qty      : (item.autoQty === 'sqft' ? 0 : 0)),
+      labor:    (o.labor    != null ? o.labor    : item.labor),
+      materials:(o.materials!= null ? o.materials: item.materials)
+    };
+  }
+
+  /* resolve an auto-suggested quantity for pre-selection */
+  function resolveAutoQty(item, property){
+    if (item.autoQty === 'sqft') return Number(property.sqft) || 0;
+    if (typeof item.autoQty === 'number') return item.autoQty;
+    return 0; // null → blank, student verifies
+  }
+
+  /* ---------- CALCULATION ENGINE ---------- */
+  // Item Total = Qty × (Labor + Materials)
+  function itemTotal(item, state){
+    if (item.isTask) return 0;
+    const e = effective(item, state);
+    if (!e.selected) return 0;
+    return round2((Number(e.qty)||0) * ((Number(e.labor)||0) + (Number(e.materials)||0)));
+  }
+  function customTotal(ci){
+    return round2((Number(ci.qty)||0) * ((Number(ci.labor)||0) + (Number(ci.materials)||0)));
+  }
+  function categoryTotal(catKey, state){
+    const cat = CATEGORIES.find(c => c.key === catKey);
+    if (!cat) return 0;
+    let sum = cat.items.reduce((a, it) => a + itemTotal(it, state), 0);
+    if (cat.custom) sum += state.customItems.reduce((a, ci) => a + customTotal(ci), 0);
+    return round2(sum);
+  }
+  function categoryBreakdown(state){
+    return CATEGORIES
+      .filter(c => c.type !== 'checklist')
+      .map(c => ({ key:c.key, title:c.title, titleHe:c.titleHe, total:categoryTotal(c.key, state) }))
+      .filter(c => c.total > 0);
+  }
+  function grandTotal(state){
+    return round2(CATEGORIES.reduce((a, c) => a + categoryTotal(c.key, state), 0));
+  }
+  function costPerSqft(state){
+    const sqft = Number(state.property.sqft) || 0;
+    return sqft ? round2(grandTotal(state) / sqft) : 0;
+  }
+  function selectedCount(state){
+    let n = CATEGORIES.reduce((a,c)=> a + c.items.filter(it => !it.isTask && (state.overrides[it.id]||{}).selected).length, 0);
+    return n + state.customItems.length;
+  }
+
+  /* ---------- selection helpers ---------- */
+  function toggleItem(id, on, state){
+    const o = state.overrides[id] || (state.overrides[id] = {});
+    o.selected = (on != null ? !!on : !o.selected);
+    // seed qty on first selection from auto-suggest
+    if (o.selected && o.qty == null){
+      const it = ITEM_INDEX[id];
+      if (it) o.qty = resolveAutoQty(it, state.property);
+    }
+    return state;
+  }
+  function setQty(id, qty, state){ (state.overrides[id] || (state.overrides[id]={})).qty = Number(qty); return state; }
+  function setPrice(id, labor, materials, state){
+    const o = state.overrides[id] || (state.overrides[id]={});
+    if (labor != null) o.labor = Number(labor);
+    if (materials != null) o.materials = Number(materials);
+    return state;
+  }
+
+  /* Pre-selection by Rehab Condition (cumulative). Editable afterwards. */
+  function applyTier(tier, state){
+    state.property.condition = tier;
+    const rank = TIER_RANK[tier] || 0;
+    CATEGORIES.forEach(c => c.items.forEach(it => {
+      if (it.isTask) return;
+      const include = it.minTier && TIER_RANK[it.minTier] <= rank;
+      if (include){
+        const o = state.overrides[it.id] || (state.overrides[it.id]={});
+        o.selected = true;
+        if (o.qty == null) o.qty = resolveAutoQty(it, state.property);
+      }
+    }));
+    return state;
+  }
+  // list which item ids a tier pre-selects (for docs / UI preview)
+  function tierSelection(tier){
+    const rank = TIER_RANK[tier] || 0;
+    const ids = [];
+    CATEGORIES.forEach(c => c.items.forEach(it => {
+      if (!it.isTask && it.minTier && TIER_RANK[it.minTier] <= rank) ids.push(it.id);
+    }));
+    return ids;
+  }
+
+  /* ---------------------------------------------------------------
+     SELF-TEST — reproduces the Excel's own example fills and asserts
+     the math matches (grand total must equal $12,600).
+     --------------------------------------------------------------- */
+  function runSelfTest(){
+    const s = createState();
+    s.property.sqft = 1600;
+    const fills = [
+      ['demo','Demo',1], ['kitchen','Basic Cabinets',10], ['kitchen','Cabinet Knobs',10],
+      ['kitchen','Cabinet Handles',10], ['kitchen','Formica Countertop',15],
+      ['kitchen','Kitchen Sink',1], ['flooring','LVP',900],
+      ['electrical','Smoke Detector',5], ['painting','Interior Paint',1000]
+    ];
+    const missing = [];
+    fills.forEach(([cat,name,qty])=>{
+      const it = findItem(cat,name);
+      if(!it){ missing.push(cat+'/'+name); return; }
+      toggleItem(it.id, true, s); setQty(it.id, qty, s);
+    });
+    const grand = grandTotal(s);
+    const checks = {
+      kitchen:   { got: categoryTotal('kitchen', s),  want: 5000 },
+      flooring:  { got: categoryTotal('flooring', s), want: 4050 },
+      painting:  { got: categoryTotal('painting', s), want: 2500 },
+      demo:      { got: categoryTotal('demo', s),     want: 900 },
+      electrical:{ got: categoryTotal('electrical', s),want: 150 },
+      grand:     { got: grand,                         want: 12600 }
+    };
+    const failures = Object.entries(checks).filter(([,v]) => v.got !== v.want)
+                      .map(([k,v]) => `${k}: got ${v.got}, want ${v.want}`);
+    const pass = failures.length === 0 && missing.length === 0;
+    // catalog integrity stats
+    const totalItems = CATEGORIES.reduce((a,c)=>a+c.items.length,0);
+    const stats = {
+      categories: CATEGORIES.length,
+      totalItems,
+      priced: CATEGORIES.reduce((a,c)=>a+c.items.filter(i=>!i.isTask).length,0),
+      tasks: CATEGORIES.reduce((a,c)=>a+c.items.filter(i=>i.isTask).length,0),
+      lightPreselect: tierSelection('light').length,
+      mediumPreselect: tierSelection('medium').length,
+      heavyPreselect: tierSelection('heavy').length
+    };
+    const result = { pass, grand, checks, failures, missing, stats };
+    if (pass) console.log('%c✓ Rehab engine self-test PASSED — grand total $'+grand, 'color:#5b8a5a;font-weight:bold', stats);
+    else      console.error('✗ Rehab engine self-test FAILED', result);
+    return result;
+  }
+
+  /* ---------- public API ---------- */
+  window.RehabApp = {
+    CATEGORIES, ITEM_INDEX, TIP, TIER_RANK,
+    createState, effective, resolveAutoQty, findItem,
+    itemTotal, customTotal, categoryTotal, categoryBreakdown, grandTotal,
+    costPerSqft, selectedCount,
+    toggleItem, setQty, setPrice, applyTier, tierSelection,
+    runSelfTest
+  };
+
+  // (runSelfTest is available on window.RehabApp for QA; not auto-run in production)
+})();
+</script>
+
+<!-- =====================================================================
+     WIZARD CONTROLLER (Steps 3–4)
+     Phase 1 (Property Details): validation, progress, and the critical
+     integration — on confirm, (re)initialize SOW pre-selection while
+     preserving manual edits on Back/return.
+     Phase 2 (Scope of Work): dynamic category/item rendering, unit-aware
+     editable qty & price, guidance tips, live totals + sticky subtotal,
+     custom Miscellaneous rows. Results dashboard + export come in Steps 5–6.
+     ===================================================================== -->
+<script>
+(function(){
+  'use strict';
+  const R = window.RehabApp;
+  const $  = (sel, ctx=document) => ctx.querySelector(sel);
+  const $$ = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
+  const fmtInt = n => (Number(n)||0).toLocaleString('en-US');
+  const money  = n => '$' + Math.round(Number(n)||0).toLocaleString('en-US');
+
+  /* ---- app runtime ---- */
+  const app = {
+    state: R.createState(),
+    step: 1,
+    totalSteps: 4,
+    labels: ['פרטי הנכס','בחירת עבודות','תצוגת עלויות','ייצוא'],
+    touched: { address:false, sqft:false, lotSqft:false, condition:false }
+  };
+
+  /* ---- element refs ---- */
+  const els = {
+    progressFill:  $('#progressFill'),
+    progressPct:   $('#progressPct'),
+    progressLabel: $('#progressLabel'),
+    form:      $('#propertyForm'),
+    address:   $('#f-address'),
+    sqft:      $('#f-sqft'),
+    floors:    $('#f-floors'),
+    lot:       $('#f-lot'),
+    conditions:$$('#conditionGroup input[name="condition"]'),
+    tierText:  $('#tierPreviewText'),
+    formHint:  $('#formHint'),
+    btnNext:   $('#btnNext'),
+    btnBack:   $('#btnBack'),
+    btnBack2:  $('#btnBack2'),
+    newReport: $('#btnNewReport'),
+    // SOW (step 2)
+    sowList:       $('#sowList'),
+    sowSubtotal:   $('#sowSubtotal'),
+    sowCount:      $('#sowCount'),
+    sowChipCount:  $('#sowChipCount'),
+    btnToResults:  $('#btnToResults'),
+    sowExpandAll:  $('#sowExpandAll'),
+    sowCollapseAll:$('#sowCollapseAll'),
+    // results dashboard (step 3)
+    btnBack3:     $('#btnBack3'),
+    resAddr:      $('#resAddr'),
+    resMeta:      $('#resMeta'),
+    kpiGrand:     $('#kpiGrand'),
+    kpiPerSqft:   $('#kpiPerSqft'),
+    kpiSqftSub:   $('#kpiSqftSub'),
+    kpiCount:     $('#kpiCount'),
+    resBreakdown: $('#resBreakdown'),
+    resRemarks:   $('#res-remarks'),
+    btnExport:    $('#btnExport'),
+    // reset confirmation modal
+    resetModal:      $('#resetModal'),
+    btnConfirmReset: $('#btnConfirmReset')
+  };
+
+  /* ---------- progress rail ---------- */
+  function renderProgress(){
+    const pct = Math.round(app.step / app.totalSteps * 100);
+    els.progressFill.style.width = pct + '%';
+    els.progressPct.textContent = pct + '%';
+    els.progressLabel.textContent =
+      'שלב ' + app.step + ' מתוך ' + app.totalSteps + ' — ' + app.labels[app.step - 1];
+  }
+
+  /* ---------- step navigation ---------- */
+  function goToStep(n){
+    app.step = n;
+    $$('.step').forEach(sec => { sec.hidden = (Number(sec.dataset.step) !== n); });
+    if (n === 2) renderSOW();       // re-render so SOW reflects any dashboard edits
+    if (n === 3) renderResults();   // build the results dashboard from current state
+    renderProgress();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    schedulePersist();
+  }
+
+  /* ---------- numeric sanitising (block negatives / junk) ---------- */
+  function sanitizeInt(inputEl){
+    const cleaned = inputEl.value.replace(/[^\d]/g, '');   // digits only → no '-', 'e', '.'
+    if (cleaned !== inputEl.value) inputEl.value = cleaned;
+  }
+
+  /* ---------- validation ---------- */
+  function getCondition(){
+    const c = els.conditions.find(r => r.checked);
+    return c ? c.value : null;
+  }
+  function validate(){
+    const address = els.address.value.trim();
+    const sqft    = els.sqft.value.trim();
+    const lot     = els.lot.value.trim();
+    const cond    = getCondition();
+
+    const errors = {};
+    if (!address) errors.address = 'יש להזין כתובת נכס.';
+    if (!sqft)                errors.sqft = 'יש להזין שטח בנוי.';
+    else if (!(Number(sqft) > 0)) errors.sqft = 'השטח חייב להיות מספר גדול מ-0.';
+    if (lot && !(Number(lot) > 0)) errors.lotSqft = 'שטח המגרש חייב להיות מספר גדול מ-0.';
+    if (!cond) errors.condition = 'יש לבחור מצב שיפוץ.';
+
+    // paint field errors only after the field was touched
+    ['address','sqft','lotSqft','condition'].forEach(key => {
+      const slot = $('[data-err="'+key+'"]');
+      if (!slot) return;
+      if (key === 'sqft') return;   // sqft slot holds a helper hint; keep it unless error
+      if (errors[key] && app.touched[key]) { slot.textContent = errors[key]; slot.style.color = 'var(--error)'; }
+      else if (key !== 'sqft') { slot.textContent = ''; slot.style.color = ''; }
+    });
+    // sqft slot: show error (touched) else its default helper text
+    const sqftSlot = $('[data-err="sqft"]');
+    if (errors.sqft && app.touched.sqft){ sqftSlot.textContent = errors.sqft; sqftSlot.style.color = 'var(--error)'; }
+    else { sqftSlot.textContent = 'קובע את הכמות ההתחלתית לפריטים מבוססי שטח (צביעה, ריצוף).'; sqftSlot.style.color = ''; }
+
+    const valid = Object.keys(errors).length === 0;
+    els.btnNext.disabled = !valid;
+    els.formHint.textContent = valid ? '' : 'יש למלא את שדות החובה כדי להמשיך.';
+    return { valid, errors };
+  }
+
+  /* ---------- tier preview text (live count before confirming) ---------- */
+  function updateTierPreview(){
+    const cond = getCondition();
+    if (!cond){
+      els.tierText.textContent = 'בחרו מצב שיפוץ — נסמן עבורכם אוטומטית את פריטי העבודה המתאימים, וניתן לשנות ידנית בהמשך.';
+      return;
+    }
+    const n = R.tierSelection(cond).length;
+    const nameMap = { light:'קל', medium:'בינוני', heavy:'כבד' };
+    els.tierText.innerHTML = 'מצב <b>' + nameMap[cond] + '</b> יסמן אוטומטית כ-<b>' + n +
+      '</b> פריטי עבודה מומלצים. פריטים לפי שטח יאוכלסו לפי השטח הבנוי — והכול ניתן לעריכה.';
+  }
+
+  /* ============================================================
+     PHASE 2 — SCOPE OF WORK
+     ============================================================ */
+  const CHECK_SVG = '<span class="check__box"><svg viewBox="0 0 24 24" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>';
+  const MEASURED = /^(SF|LF|CY|Square)$/i;      // measured units → numeric input + unit badge
+  const isMeasured = u => MEASURED.test(u || '');
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  /* (re)initialize SOW pre-selection for a tier; flag SF auto-seeds */
+  function initSOWForTier(cond){
+    const s = app.state;
+    s.overrides = {};
+    R.applyTier(cond, s);
+    R.CATEGORIES.forEach(c => c.items.forEach(it => {
+      const o = s.overrides[it.id];
+      if (o && o.selected && it.autoQty === 'sqft') o.autoSeeded = true;
+    }));
+    app.initCondition = cond;
+    app.initSqft = s.property.sqft;
+  }
+
+  /* ---------- CRITICAL INTEGRATION: confirm step 1 ---------- */
+  function confirmStep1(){
+    const { valid } = validate();
+    if (!valid){
+      Object.keys(app.touched).forEach(k => app.touched[k] = true);
+      validate();
+      return;
+    }
+    const p = app.state.property;
+    const newCond = getCondition();
+    const newSqft = Number(els.sqft.value);
+
+    // persist property details
+    p.address = els.address.value.trim();
+    p.floors  = Number(els.floors.value);
+    p.lotSqft = els.lot.value.trim() ? Number(els.lot.value) : null;
+
+    const firstInit      = (app.initCondition == null);
+    const conditionMoved = (app.initCondition !== newCond);
+    p.sqft = newSqft;
+    p.condition = newCond;
+
+    if (firstInit || conditionMoved){
+      // fresh (re)initialization when the tier is chosen/changed
+      initSOWForTier(newCond);
+    } else if (newSqft !== app.initSqft){
+      // same tier, returning from Back with a new SQFT → re-seed ONLY the
+      // still-auto SF quantities; every manual edit is preserved.
+      R.CATEGORIES.forEach(c => c.items.forEach(it => {
+        const o = app.state.overrides[it.id];
+        if (o && o.selected && it.autoQty === 'sqft' && o.autoSeeded) o.qty = newSqft;
+      }));
+      app.initSqft = newSqft;
+    }
+    // (same tier + same sqft → overrides untouched → manual edits preserved)
+
+    goToStep(2);   // goToStep renders the SOW from current state
+  }
+
+  /* ---------- SOW rendering ---------- */
+  function catSelectedCount(cat){
+    if (cat.custom) return app.state.customItems.length;
+    return cat.items.filter(it => !it.isTask && (app.state.overrides[it.id]||{}).selected).length;
+  }
+
+  function qtyControlHTML(it, e){
+    const dis = e.selected ? '' : 'disabled';
+    if (isMeasured(it.unit)){
+      return '<div class="mini">' +
+        '<input type="text" inputmode="decimal" data-role="qty" value="'+e.qty+'" aria-label="כמות" '+dis+'>' +
+        '<span class="mini__affix mini__affix--unit">'+esc(it.unit)+'</span></div>';
+    }
+    // count units → step controls
+    return '<div class="mini">' +
+      '<button type="button" data-role="dec" aria-label="הפחת" '+dis+'>&minus;</button>' +
+      '<input type="text" inputmode="numeric" data-role="qty" value="'+e.qty+'" aria-label="כמות" '+dis+'>' +
+      '<button type="button" data-role="inc" aria-label="הוסף" '+dis+'>+</button></div>';
+  }
+
+  function itemRowHTML(it){
+    const e = R.effective(it, app.state);
+    const on = e.selected;
+    if (it.isTask){
+      const tip = it.tip ? '<span class="tip '+it.tip.cls+'">'+it.tip.label+'</span>' : '';
+      return '<div class="sow-item '+(on?'on':'off')+'" data-id="'+it.id+'" data-task="1">' +
+        '<label class="sow-item__check check"><input type="checkbox" data-role="toggle" '+(on?'checked':'')+'>'+CHECK_SVG+'</label>' +
+        '<div class="sow-item__body"><div class="sow-item__name"><bdi>'+esc(it.name)+'</bdi> '+tip+'</div></div></div>';
+    }
+    const tip  = it.tip ? '<span class="tip '+it.tip.cls+'">'+it.tip.label+'</span>' : '';
+    const note = it.note ? '<div class="sow-item__note">'+esc(it.note)+'</div>' : '';
+    const price = e.labor + e.materials;
+    const dis = on ? '' : 'disabled';
+    return '<div class="sow-item '+(on?'on':'off')+'" data-id="'+it.id+'">' +
+      '<label class="sow-item__check check"><input type="checkbox" data-role="toggle" '+(on?'checked':'')+'>'+CHECK_SVG+'</label>' +
+      '<div class="sow-item__body"><div class="sow-item__name"><bdi>'+esc(it.name)+'</bdi>' +
+        '<span class="sow-item__unit">'+esc(it.unit)+'</span> '+tip+'</div>'+note+'</div>' +
+      '<div class="sow-item__controls">' +
+        '<div><span class="sow-field-lbl">כמות</span>'+qtyControlHTML(it,e)+'</div>' +
+        '<span class="sow-item__op">×</span>' +
+        '<div><span class="sow-field-lbl">מחיר ליח\'</span>' +
+          '<div class="mini mini--price"><span class="mini__affix mini__affix--cur">$</span>' +
+          '<input type="text" inputmode="decimal" data-role="price" value="'+price+'" aria-label="מחיר ליחידה" '+dis+'></div></div>' +
+        '<div class="sow-item__total" data-role="total">'+money(R.itemTotal(it, app.state))+'</div>' +
+      '</div></div>';
+  }
+
+  function miscRowHTML(ci){
+    return '<div class="misc-row" data-cid="'+ci.id+'">' +
+      '<input class="input misc-row__name" data-role="m-name" placeholder="שם פריט (למשל: אגרות / היתרים)" value="'+esc(ci.name)+'">' +
+      '<div class="mini"><input type="text" inputmode="numeric" data-role="m-qty" value="'+(ci.qty)+'" style="width:52px" aria-label="כמות">' +
+        '<span class="mini__affix mini__affix--unit">UNIT</span></div>' +
+      '<div class="mini mini--price"><span class="mini__affix mini__affix--cur">$</span>' +
+        '<input type="text" inputmode="decimal" data-role="m-price" value="'+(ci.labor)+'" aria-label="מחיר"></div>' +
+      '<div class="sow-item__total" data-role="m-total">'+money(R.customTotal(ci))+'</div>' +
+      '<button type="button" class="btn btn--icon btn--danger btn--sm" data-role="m-remove" title="הסר" aria-label="הסר">&times;</button>' +
+    '</div>';
+  }
+
+  function categoryHTML(cat){
+    const sel = catSelectedCount(cat);
+    const open = sel > 0;
+    const total = R.categoryTotal(cat.key, app.state);
+    let body;
+    if (cat.custom){
+      body = '<div data-role="misc-body">' + app.state.customItems.map(miscRowHTML).join('') + '</div>' +
+             '<button type="button" class="btn btn--subtle btn--sm misc-add" id="miscAdd">+ הוסף פריט מותאם</button>';
+    } else {
+      body = cat.items.map(itemRowHTML).join('');
+    }
+    const countHTML = cat.type === 'checklist'
+      ? '<span class="cat__count" data-role="cat-count">רשימת תיעוד</span>'
+      : '<span class="cat__count" data-role="cat-count">'+(sel ? '<b>'+sel+'</b> נבחרו' : '—')+'</span>';
+    const subtotalHTML = cat.type === 'checklist'
+      ? '<span class="cat__subtotal" data-role="cat-subtotal">—</span>'
+      : '<span class="cat__subtotal" data-role="cat-subtotal">'+money(total)+'</span>';
+
+    return '<div class="cat '+(open?'open':'')+' '+(sel>0?'has-selected':'')+'" data-cat="'+cat.key+'">' +
+      '<button type="button" class="cat__head" aria-expanded="'+open+'">' +
+        '<svg class="cat__chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>' +
+        '<span class="cat__titles"><span class="cat__title-he">'+esc(cat.titleHe)+'</span>' +
+          '<span class="cat__title-en">'+esc(cat.title)+'</span></span>' +
+        '<span class="cat__meta">'+countHTML+subtotalHTML+'</span>' +
+      '</button>' +
+      '<div class="cat__body" '+(open?'':'hidden')+'>'+body+'</div></div>';
+  }
+
+  function renderSOW(){
+    els.sowList.innerHTML = R.CATEGORIES.map(categoryHTML).join('');
+    updateSubtotal();
+  }
+
+  /* ---------- live updates ---------- */
+  function updateRowTotal(row){
+    const it = R.ITEM_INDEX[row.dataset.id];
+    const cell = row.querySelector('[data-role="total"]');
+    if (it && cell) cell.textContent = money(R.itemTotal(it, app.state));
+  }
+  function updateCategoryHeader(catKey){
+    const catEl = els.sowList.querySelector('.cat[data-cat="'+catKey+'"]');
+    if (!catEl) return;
+    const cat = R.CATEGORIES.find(c => c.key === catKey);
+    const sel = catSelectedCount(cat);
+    const sub = catEl.querySelector('[data-role="cat-subtotal"]');
+    const cnt = catEl.querySelector('[data-role="cat-count"]');
+    if (cat.type !== 'checklist'){
+      if (sub) sub.textContent = money(R.categoryTotal(catKey, app.state));
+      if (cnt) cnt.innerHTML = sel ? '<b>'+sel+'</b> נבחרו' : '—';
+    }
+    catEl.classList.toggle('has-selected', sel > 0);
+  }
+  function updateSubtotal(){
+    const n = R.selectedCount(app.state);
+    const grand = R.grandTotal(app.state);
+    els.sowSubtotal.textContent = money(grand);
+    els.sowCount.textContent = n;
+    els.sowChipCount.textContent = n;
+    schedulePersist();
+  }
+  /* ============================================================
+     PHASE 3 — RESULTS DASHBOARD
+     ============================================================ */
+  const COND_LABEL = { light:'קל · רענון קוסמטי', medium:'בינוני · שיפוץ חלקי', heavy:'כבד · שיפוץ יסודי' };
+
+  function updateKPIs(){
+    const s = app.state;
+    els.kpiGrand.textContent = money(R.grandTotal(s));
+    const ps = R.costPerSqft(s);
+    els.kpiPerSqft.textContent = ps ? '$' + ps.toFixed(2) : '$0';
+    els.kpiSqftSub.textContent = fmtInt(s.property.sqft) + ' SF';
+    els.kpiCount.textContent = R.selectedCount(s);
+    schedulePersist();
+  }
+
+  function resItemRowHTML(it){
+    const e = R.effective(it, app.state);
+    const price = e.labor + e.materials;
+    const tip = it.tip ? '<span class="tip '+it.tip.cls+'">'+it.tip.label+'</span>' : '';
+    return '<div class="sow-item on" data-id="'+it.id+'">' +
+      '<div class="sow-item__body"><div class="sow-item__name"><bdi>'+esc(it.name)+'</bdi>' +
+        '<span class="sow-item__unit">'+esc(it.unit)+'</span> '+tip+'</div></div>' +
+      '<div class="sow-item__controls">' +
+        '<div><span class="sow-field-lbl">כמות</span>'+qtyControlHTML(it,e)+'</div>' +
+        '<span class="sow-item__op">×</span>' +
+        '<div><span class="sow-field-lbl">מחיר ליח\'</span>' +
+          '<div class="mini mini--price"><span class="mini__affix mini__affix--cur">$</span>' +
+          '<input type="text" inputmode="decimal" data-role="price" value="'+price+'" aria-label="מחיר ליחידה"></div></div>' +
+        '<div class="sow-item__total" data-role="total">'+money(R.itemTotal(it, app.state))+'</div>' +
+      '</div></div>';
+  }
+
+  function resCategoryHTML(cat){
+    let rows;
+    if (cat.custom){
+      if (!app.state.customItems.length) return '';
+      rows = app.state.customItems.map(miscRowHTML).join('');
+    } else {
+      const selected = cat.items.filter(it => !it.isTask && (app.state.overrides[it.id]||{}).selected);
+      if (!selected.length) return '';
+      rows = selected.map(resItemRowHTML).join('');
+    }
+    return '<div class="res-cat" data-cat="'+cat.key+'">' +
+      '<div class="res-cat__head"><div class="res-cat__titles">' +
+        '<span class="res-cat__he">'+esc(cat.titleHe)+'</span>' +
+        '<span class="res-cat__en">'+esc(cat.title)+'</span></div>' +
+        '<div class="res-cat__sub" data-role="res-cat-sub">'+money(R.categoryTotal(cat.key, app.state))+'</div></div>' +
+      '<div class="res-cat__items">'+rows+'</div></div>';
+  }
+
+  function renderResults(){
+    const s = app.state, p = s.property;
+    // header
+    els.resAddr.innerHTML = '<bdi>' + (p.address ? esc(p.address) : '—') + '</bdi>';
+    els.resMeta.innerHTML =
+      '<span class="chip">'+ (COND_LABEL[p.condition] || '—') +'</span>' +
+      '<span class="chip">שטח <span class="mono">'+fmtInt(p.sqft)+' SF</span></span>' +
+      (p.lotSqft ? '<span class="chip">מגרש <span class="mono">'+fmtInt(p.lotSqft)+' SF</span></span>' : '') +
+      '<span class="chip">קומות <span class="mono">'+p.floors+'</span></span>';
+    // kpis
+    updateKPIs();
+    // breakdown (active categories only)
+    const html = R.CATEGORIES.filter(c => c.type !== 'checklist').map(resCategoryHTML).join('');
+    els.resBreakdown.innerHTML = html || '<div class="res-empty"><div class="eyebrow center">No items selected</div>לא נבחרו פריטי עבודה. חזרו לבחירת עבודות כדי להוסיף פריטים.</div>';
+    // remarks
+    els.resRemarks.value = s.remarks || '';
+  }
+
+  /* ---- results inline-edit refresh ---- */
+  function resRefreshCat(catKey){
+    const catEl = els.resBreakdown.querySelector('.res-cat[data-cat="'+catKey+'"]');
+    if (catEl){ const sub = catEl.querySelector('[data-role="res-cat-sub"]'); if (sub) sub.textContent = money(R.categoryTotal(catKey, app.state)); }
+  }
+  function resRefreshItem(row){
+    const it = R.ITEM_INDEX[row.dataset.id];
+    row.querySelector('[data-role="total"]').textContent = money(R.itemTotal(it, app.state));
+    resRefreshCat(it.category);
+    updateKPIs();
+  }
+  function resRefreshMisc(rowEl){
+    const ci = findCustom(rowEl.dataset.cid);
+    if (ci) rowEl.querySelector('[data-role="m-total"]').textContent = money(R.customTotal(ci));
+    resRefreshCat('misc');
+    updateKPIs();
+  }
+
+  function onResClick(e){
+    const step = e.target.closest('button[data-role="inc"], button[data-role="dec"]');
+    if (step && !step.disabled){
+      const row = step.closest('.sow-item');
+      const qty = row.querySelector('[data-role="qty"]');
+      let v = Math.max(0, (parseInt(qty.value,10)||0) + (step.dataset.role==='inc' ? 1 : -1));
+      qty.value = v;
+      R.setQty(row.dataset.id, v, app.state);
+      const o = app.state.overrides[row.dataset.id]; if (o) o.autoSeeded = false;
+      resRefreshItem(row);
+      return;
+    }
+    const rm = e.target.closest('[data-role="m-remove"]');
+    if (rm){
+      const rowEl = rm.closest('.misc-row');
+      const idx = app.state.customItems.findIndex(c => c.id === rowEl.dataset.cid);
+      if (idx > -1) app.state.customItems.splice(idx, 1);
+      rowEl.remove(); resRefreshCat('misc'); updateKPIs();
+    }
+  }
+  function onResInput(e){
+    const t = e.target;
+    if (t.id === 'res-remarks'){ app.state.remarks = t.value; schedulePersist(); return; }
+    if (t.dataset.role === 'qty'){
+      const row = t.closest('.sow-item');
+      const measured = isMeasured(R.ITEM_INDEX[row.dataset.id].unit);
+      R.setQty(row.dataset.id, sanitizeField(t, measured), app.state);
+      const o = app.state.overrides[row.dataset.id]; if (o) o.autoSeeded = false;
+      resRefreshItem(row);
+    } else if (t.dataset.role === 'price'){
+      const row = t.closest('.sow-item');
+      R.setPrice(row.dataset.id, sanitizeField(t, true), null, app.state);
+      resRefreshItem(row);
+    } else if (t.dataset.role === 'm-name'){
+      const ci = findCustom(t.closest('.misc-row').dataset.cid); if (ci) ci.name = t.value;
+      schedulePersist();
+    } else if (t.dataset.role === 'm-qty' || t.dataset.role === 'm-price'){
+      const rowEl = t.closest('.misc-row'); const ci = findCustom(rowEl.dataset.cid);
+      const val = sanitizeField(t, t.dataset.role === 'm-price');
+      if (ci){ if (t.dataset.role === 'm-qty') ci.qty = Number(val)||0; else ci.labor = Number(val)||0; }
+      resRefreshMisc(rowEl);
+    }
+  }
+
+  /* ---------- commit changes to engine ---------- */
+  function commitToggle(row){
+    const id = row.dataset.id;
+    const on = row.querySelector('[data-role="toggle"]').checked;
+    R.toggleItem(id, on, app.state);
+    row.classList.toggle('on', on);
+    row.classList.toggle('off', !on);
+    row.querySelectorAll('.mini input, .mini button').forEach(el => { el.disabled = !on; });
+    const it = R.ITEM_INDEX[id];
+    if (on && it && it.autoQty === 'sqft'){ const o = app.state.overrides[id]; if (o) o.autoSeeded = true; }
+    const qtyInput = row.querySelector('[data-role="qty"]');
+    if (qtyInput) qtyInput.value = R.effective(it, app.state).qty;
+    updateRowTotal(row);
+    updateCategoryHeader(row.closest('.cat').dataset.cat);
+    updateSubtotal();
+  }
+  function commitQty(row, val){
+    R.setQty(row.dataset.id, val, app.state);
+    const o = app.state.overrides[row.dataset.id]; if (o) o.autoSeeded = false;  // now manual
+    updateRowTotal(row);
+    updateCategoryHeader(row.closest('.cat').dataset.cat);
+    updateSubtotal();
+  }
+  function commitPrice(row, val){
+    R.setPrice(row.dataset.id, val, null, app.state);   // sets labor; materials stays
+    updateRowTotal(row);
+    updateCategoryHeader(row.closest('.cat').dataset.cat);
+    updateSubtotal();
+  }
+
+  /* ---------- custom (Miscellaneous) rows ---------- */
+  function addMiscRow(){
+    const ci = { id: 'misc-' + Date.now() + '-' + Math.floor(Math.random()*1e4), name:'', unit:'UNIT', qty:1, labor:0, materials:0 };
+    app.state.customItems.push(ci);
+    const body = els.sowList.querySelector('.cat[data-cat="misc"] [data-role="misc-body"]');
+    if (body) body.insertAdjacentHTML('beforeend', miscRowHTML(ci));
+    updateCategoryHeader('misc');
+    updateSubtotal();
+  }
+  function findCustom(cid){ return app.state.customItems.find(c => c.id === cid); }
+
+  /* ---------- SOW event delegation ---------- */
+  function sanitizeField(el, decimal){
+    let v = el.value;
+    v = decimal ? v.replace(/[^\d.]/g,'').replace(/(\..*)\./g,'$1') : v.replace(/[^\d]/g,'');
+    if (v !== el.value) el.value = v;
+    return v;
+  }
+  function onSowClick(e){
+    const head = e.target.closest('.cat__head');
+    if (head){
+      const cat = head.closest('.cat');
+      const open = cat.classList.toggle('open');
+      cat.querySelector('.cat__body').hidden = !open;
+      head.setAttribute('aria-expanded', open);
+      return;
+    }
+    if (e.target.closest('#miscAdd')){ addMiscRow(); return; }
+    const rm = e.target.closest('[data-role="m-remove"]');
+    if (rm){
+      const rowEl = rm.closest('.misc-row');
+      const idx = app.state.customItems.findIndex(c => c.id === rowEl.dataset.cid);
+      if (idx > -1) app.state.customItems.splice(idx, 1);
+      rowEl.remove(); updateCategoryHeader('misc'); updateSubtotal();
+      return;
+    }
+    const step = e.target.closest('button[data-role="inc"], button[data-role="dec"]');
+    if (step && !step.disabled){
+      const row = step.closest('.sow-item');
+      const qty = row.querySelector('[data-role="qty"]');
+      let v = Math.max(0, (parseInt(qty.value,10)||0) + (step.dataset.role==='inc' ? 1 : -1));
+      qty.value = v; commitQty(row, v);
+    }
+  }
+  function onSowInput(e){
+    const t = e.target;
+    if (t.dataset.role === 'qty'){
+      const row = t.closest('.sow-item');
+      const measured = isMeasured(R.ITEM_INDEX[row.dataset.id].unit);
+      commitQty(row, sanitizeField(t, measured));
+    } else if (t.dataset.role === 'price'){
+      commitPrice(t.closest('.sow-item'), sanitizeField(t, true));
+    } else if (t.dataset.role === 'm-name'){
+      const ci = findCustom(t.closest('.misc-row').dataset.cid); if (ci) ci.name = t.value;
+      schedulePersist();
+    } else if (t.dataset.role === 'm-qty' || t.dataset.role === 'm-price'){
+      const rowEl = t.closest('.misc-row'); const ci = findCustom(rowEl.dataset.cid);
+      const val = sanitizeField(t, t.dataset.role === 'm-price');
+      if (ci){ if (t.dataset.role === 'm-qty') ci.qty = Number(val)||0; else ci.labor = Number(val)||0; }
+      rowEl.querySelector('[data-role="m-total"]').textContent = money(R.customTotal(ci));
+      updateCategoryHeader('misc'); updateSubtotal();
+    }
+  }
+  function onSowChange(e){
+    if (e.target.dataset.role === 'toggle'){ commitToggle(e.target.closest('.sow-item')); }
+  }
+  function setAllCats(open){
+    els.sowList.querySelectorAll('.cat').forEach(cat => {
+      cat.classList.toggle('open', open);
+      cat.querySelector('.cat__body').hidden = !open;
+      cat.querySelector('.cat__head').setAttribute('aria-expanded', open);
+    });
+  }
+
+  /* ============================================================
+     PERSISTENCE — localStorage autosave / restore
+     ============================================================ */
+  const LS_KEY = 'tma_rehab_state_v1';
+  let persistTimer = null;
+  function snapshot(){
+    return {
+      v: 1,
+      step: app.step,
+      initCondition: app.initCondition || null,
+      initSqft: app.initSqft || null,
+      form: { address: els.address.value, sqft: els.sqft.value, floors: els.floors.value, lot: els.lot.value, condition: getCondition() },
+      state: app.state
+    };
+  }
+  function persist(){ try { localStorage.setItem(LS_KEY, JSON.stringify(snapshot())); } catch(e){} }
+  function schedulePersist(){ clearTimeout(persistTimer); persistTimer = setTimeout(persist, 200); }
+  function clearPersist(){ try { localStorage.removeItem(LS_KEY); } catch(e){} }
+
+  function restore(){
+    let snap;
+    try { snap = JSON.parse(localStorage.getItem(LS_KEY)); } catch(e){ snap = null; }
+    if (!snap || snap.v !== 1 || !snap.state) return null;
+    const s = R.createState();
+    const st = snap.state;
+    if (st.property) Object.assign(s.property, st.property);
+    s.overrides   = (st.overrides && typeof st.overrides === 'object') ? st.overrides : {};
+    s.customItems = Array.isArray(st.customItems) ? st.customItems : [];
+    s.remarks     = st.remarks || '';
+    app.state = s;
+    app.initCondition = snap.initCondition || null;
+    app.initSqft = snap.initSqft || null;
+    const f = snap.form || {};
+    els.address.value = f.address || '';
+    els.sqft.value    = f.sqft || '';
+    els.floors.value  = f.floors || '1';
+    els.lot.value     = f.lot || '';
+    if (f.condition){ const rb = els.conditions.find(r => r.value === f.condition); if (rb) rb.checked = true; }
+    app.touched = { address:!!f.address, sqft:!!f.sqft, lotSqft:!!f.lot, condition:!!f.condition };
+    return snap;
+  }
+
+  /* ---------- reset (with confirmation modal) ---------- */
+  function openResetModal(){ els.resetModal.hidden = false; els.btnConfirmReset.focus(); }
+  function closeResetModal(){ els.resetModal.hidden = true; }
+  function doReset(){
+    clearPersist();
+    app.state = R.createState();
+    app.initCondition = null; app.initSqft = null;
+    app.touched = { address:false, sqft:false, lotSqft:false, condition:false };
+    els.form.reset();
+    updateTierPreview();
+    validate();
+    closeResetModal();
+    goToStep(1);
+    els.address.focus();
+  }
+
+  /* ============================================================
+     PHASE 4 — EXCEL (.xlsx) EXPORT  (ExcelJS, client-side, styled)
+     ============================================================ */
+  const XLS = {
+    noir:'FF1F1F1F', gold:'FFC5A253', goldSoft:'FFF2E0B6', gold100:'FFF4E6C2',
+    ivory:'FFFBF9F4', ivoryAlt:'FFFDFBF6', divider:'FFE8D9BF', text:'FF1F1F1F',
+    muted:'FF7A6A54', white:'FFFFFFFF'
+  };
+  const thin  = argb => ({ style:'thin',  color:{ argb: argb || XLS.divider } });
+  const solid = argb => ({ type:'pattern', pattern:'solid', fgColor:{ argb } });
+
+  function buildWorkbook(){
+    const s = app.state, p = s.property;
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'The Multi Academy';
+    wb.created = new Date();
+    const ws = wb.addWorksheet('אומדן שיפוץ', {
+      views: [{ rightToLeft: true, showGridLines: false }],
+      pageSetup: { orientation:'portrait', fitToPage:true, fitToWidth:1, fitToHeight:0, margins:{ left:0.4, right:0.4, top:0.5, bottom:0.5, header:0.2, footer:0.2 } }
+    });
+    ws.columns = [{ width:48 }, { width:12 }, { width:12 }, { width:15 }, { width:16 }];
+    const NC = 5;
+    let r = 0;
+    const fillRow = (row, argb, a=1, b=NC) => { for (let c=a;c<=b;c++) ws.getCell(row,c).fill = solid(argb); };
+    const boxRow  = (row, argb, a=1, b=NC) => { for (let c=a;c<=b;c++) ws.getCell(row,c).border = { bottom: thin(argb) }; };
+
+    /* ---- brand title ---- */
+    r=1; ws.mergeCells(r,1,r,NC);
+    let cell = ws.getCell(r,1);
+    cell.value = 'THE MULTI ACADEMY';
+    cell.font = { name:'Arial', size:16, bold:true, color:{ argb:XLS.goldSoft } };
+    cell.alignment = { horizontal:'center', vertical:'middle' };
+    fillRow(r, XLS.noir); ws.getRow(r).height = 30;
+
+    r=2; ws.mergeCells(r,1,r,NC);
+    cell = ws.getCell(r,1);
+    cell.value = 'אומדן עלויות שיפוץ · Rehab Cost Estimate';
+    cell.font = { size:10, italic:true, color:{ argb:XLS.goldSoft } };
+    cell.alignment = { horizontal:'center', vertical:'middle' };
+    fillRow(r, XLS.noir); ws.getRow(r).height = 16;
+
+    r=3; ws.getRow(r).height = 6;   // spacer
+
+    /* ---- property details block ---- */
+    r=4; ws.mergeCells(r,1,r,NC);
+    cell = ws.getCell(r,1);
+    cell.value = 'פרטי הנכס · Property Details';
+    cell.font = { bold:true, size:11, color:{ argb:XLS.text } };
+    cell.alignment = { horizontal:'right', vertical:'middle' };
+    fillRow(r, XLS.gold100); ws.getRow(r).height = 20;
+
+    const addProp = (label, value, numFmt) => {
+      r++;
+      const a = ws.getCell(r,1);
+      a.value = label; a.font = { bold:true, color:{ argb:XLS.text } };
+      a.alignment = { horizontal:'right', vertical:'middle' }; a.fill = solid(XLS.ivory);
+      ws.mergeCells(r,2,r,NC);
+      const v = ws.getCell(r,2);
+      v.value = value; if (numFmt) v.numFmt = numFmt;
+      v.alignment = { horizontal:'right', vertical:'middle' };
+      boxRow(r); ws.getRow(r).height = 18;
+    };
+    const condLabel = { light:'קל · רענון קוסמטי', medium:'בינוני · שיפוץ חלקי', heavy:'כבד · שיפוץ יסודי' };
+    addProp('כתובת · Address', p.address || '—');
+    addProp('מצב שיפוץ · Condition', condLabel[p.condition] || '—');
+    addProp('שטח בנוי · SQFT', Number(p.sqft)||0, '#,##0" SF"');
+    addProp('שטח מגרש · Lot SQFT', p.lotSqft ? Number(p.lotSqft) : '—', p.lotSqft ? '#,##0" SF"' : undefined);
+    addProp('קומות · Floors', Number(p.floors)||1);
+
+    r++; ws.getRow(r).height = 6; // spacer
+
+    /* ---- metrics summary ---- */
+    const addMetric = (label, value, numFmt, big) => {
+      r++;
+      ws.mergeCells(r,1,r,NC-1);
+      const a = ws.getCell(r,1);
+      a.value = label; a.font = { bold:true, size: big?12:11, color:{ argb:XLS.goldSoft } };
+      a.alignment = { horizontal:'right', vertical:'middle' };
+      fillRow(r, XLS.noir, 1, NC-1);
+      const v = ws.getCell(r,NC);
+      v.value = value; v.numFmt = numFmt;
+      v.font = { bold:true, size: big?14:12, color:{ argb:XLS.text } };
+      v.alignment = { horizontal:'center', vertical:'middle' };
+      v.fill = solid(big ? XLS.gold : XLS.gold100);
+      ws.getRow(r).height = big ? 26 : 20;
+    };
+    addMetric('סה"כ עלות השיפוץ · GRAND TOTAL', R.grandTotal(s), '$#,##0', true);
+    addMetric('עלות למ"ר · Cost / SQFT', R.costPerSqft(s), '$#,##0.00', false);
+
+    r++; ws.getRow(r).height = 8; // spacer
+
+    /* ---- SOW table header ---- */
+    r++;
+    const heads = ['פריט · Item', 'כמות · Qty', 'יחידה · Unit', "מחיר ליח' · Price", 'סה"כ · Total'];
+    heads.forEach((h,i) => {
+      const c = ws.getCell(r, i+1);
+      c.value = h; c.font = { bold:true, size:10, color:{ argb:XLS.goldSoft } };
+      c.alignment = { horizontal: i===0 ? 'right' : 'center', vertical:'middle' };
+      c.fill = solid(XLS.noir); c.border = { bottom: thin(XLS.gold) };
+    });
+    ws.getRow(r).height = 22;
+
+    /* ---- categories + items (active only) ---- */
+    let maxNameLen = String(heads[0]).length;
+    R.CATEGORIES.filter(c => c.type !== 'checklist').forEach(cat => {
+      let items;
+      if (cat.custom){
+        if (!s.customItems.length) return;
+        items = s.customItems.map(ci => ({ name: ci.name || 'פריט מותאם', qty:Number(ci.qty)||0, unit:'UNIT', price:Number(ci.labor)||0, total:R.customTotal(ci) }));
+      } else {
+        const sel = cat.items.filter(it => !it.isTask && (s.overrides[it.id]||{}).selected);
+        if (!sel.length) return;
+        items = sel.map(it => { const e = R.effective(it,s); return { name:it.name, qty:Number(e.qty)||0, unit:it.unit, price:e.labor+e.materials, total:R.itemTotal(it,s) }; });
+      }
+      // category band
+      r++;
+      ws.mergeCells(r,1,r,NC-1);
+      const cb = ws.getCell(r,1);
+      cb.value = cat.titleHe + '   ·   ' + cat.title;
+      cb.font = { bold:true, size:11, color:{ argb:XLS.text } };
+      cb.alignment = { horizontal:'right', vertical:'middle' };
+      fillRow(r, XLS.gold100);
+      const cs = ws.getCell(r,NC);
+      cs.value = R.categoryTotal(cat.key, s); cs.numFmt = '$#,##0';
+      cs.font = { bold:true, color:{ argb:XLS.text } };
+      cs.alignment = { horizontal:'center', vertical:'middle' };
+      ws.getRow(r).height = 20;
+      // items
+      items.forEach((it, idx) => {
+        r++;
+        maxNameLen = Math.max(maxNameLen, String(it.name).length);
+        const bg = idx % 2 ? XLS.white : XLS.ivoryAlt;
+        const nameC = ws.getCell(r,1);
+        nameC.value = it.name; nameC.font = { color:{ argb:XLS.text } };
+        nameC.alignment = { horizontal:'right', vertical:'middle', wrapText:true };
+        const qtyC = ws.getCell(r,2); qtyC.value = it.qty; qtyC.numFmt = '#,##0.##'; qtyC.alignment = { horizontal:'center', vertical:'middle' };
+        const unitC = ws.getCell(r,3); unitC.value = it.unit; unitC.font = { color:{ argb:XLS.muted } }; unitC.alignment = { horizontal:'center', vertical:'middle' };
+        const priceC = ws.getCell(r,4); priceC.value = it.price; priceC.numFmt = '$#,##0.00'; priceC.alignment = { horizontal:'center', vertical:'middle' };
+        const totC = ws.getCell(r,5); totC.value = it.total; totC.numFmt = '$#,##0'; totC.font = { bold:true, color:{ argb:XLS.text } }; totC.alignment = { horizontal:'center', vertical:'middle' };
+        for (let c=1;c<=NC;c++){ const cc = ws.getCell(r,c); if (!cc.fill) cc.fill = solid(bg); cc.border = { bottom: thin() }; }
+        ws.getRow(r).height = 18;
+      });
+    });
+
+    /* ---- grand total row ---- */
+    r++;
+    ws.mergeCells(r,1,r,NC-1);
+    const g = ws.getCell(r,1);
+    g.value = 'סה"כ כללי · GRAND TOTAL';
+    g.font = { bold:true, size:13, color:{ argb:XLS.goldSoft } };
+    g.alignment = { horizontal:'right', vertical:'middle' };
+    fillRow(r, XLS.noir);
+    const gv = ws.getCell(r,NC);
+    gv.value = R.grandTotal(s); gv.numFmt = '$#,##0';
+    gv.font = { bold:true, size:13, color:{ argb:XLS.noir } };
+    gv.alignment = { horizontal:'center', vertical:'middle' };
+    gv.fill = solid(XLS.gold);
+    ws.getRow(r).height = 26;
+
+    /* ---- remarks ---- */
+    r++; ws.getRow(r).height = 10;
+    r++;
+    ws.mergeCells(r,1,r,NC);
+    cell = ws.getCell(r,1);
+    cell.value = 'הערות כלליות לשיפוץ · Project Remarks & Scope Notes';
+    cell.font = { bold:true, size:11, color:{ argb:XLS.text } };
+    cell.alignment = { horizontal:'right', vertical:'middle' };
+    fillRow(r, XLS.gold100); ws.getRow(r).height = 20;
+    r++;
+    ws.mergeCells(r,1,r,NC);
+    cell = ws.getCell(r,1);
+    cell.value = s.remarks && s.remarks.trim() ? s.remarks.trim() : '—';
+    cell.alignment = { horizontal:'right', vertical:'top', wrapText:true };
+    cell.font = { color:{ argb:XLS.text } };
+    for (let c=1;c<=NC;c++) ws.getCell(r,c).border = { bottom: thin(), left: thin(), right: thin() };
+    ws.getRow(r).height = 64;
+
+    /* ---- footer ---- */
+    r++; ws.getRow(r).height = 8;
+    r++;
+    ws.mergeCells(r,1,r,NC);
+    cell = ws.getCell(r,1);
+    const d = new Date();
+    const ds = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    cell.value = 'הופק בתאריך ' + ds + ' · The Multi Academy · מחשבון שיפוצים';
+    cell.font = { size:9, italic:true, color:{ argb:XLS.muted } };
+    cell.alignment = { horizontal:'center', vertical:'middle' };
+
+    // auto-fit the item column to avoid truncation
+    ws.getColumn(1).width = Math.min(64, Math.max(34, maxNameLen + 4));
+    return wb;
+  }
+
+  async function generateExcel(){
+    if (typeof ExcelJS === 'undefined'){
+      alert('ספריית הייצוא לא נטענה. בדקו את חיבור האינטרנט ונסו שוב.');
+      return;
+    }
+    const btn = els.btnExport;
+    const orig = btn.innerHTML;
+    btn.disabled = true; btn.textContent = 'מייצא…';
+    try {
+      const wb = buildWorkbook();
+      const buf = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const d = new Date();
+      const ds = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      a.href = url; a.download = 'TMA_Rehab_Estimate_' + ds + '.xlsx';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    } catch (err){
+      console.error('Excel export failed', err);
+      alert('הייצוא נכשל: ' + err.message);
+    } finally {
+      btn.disabled = false; btn.innerHTML = orig;
+    }
+  }
+  window.RehabExport = { buildWorkbook, generateExcel };
+
+  /* ---------- wire events ---------- */
+  els.address.addEventListener('input', () => { app.touched.address = true; validate(); schedulePersist(); });
+  els.sqft.addEventListener('input', () => { sanitizeInt(els.sqft); app.touched.sqft = true; validate(); schedulePersist(); });
+  els.lot.addEventListener('input',  () => { sanitizeInt(els.lot);  app.touched.lotSqft = true; validate(); schedulePersist(); });
+  els.floors.addEventListener('change', schedulePersist);
+  ['address','sqft','lot'].forEach(k => els[k] && els[k].addEventListener('blur', () => { app.touched[k==='lot'?'lotSqft':k] = true; validate(); }));
+  els.conditions.forEach(r => r.addEventListener('change', () => { app.touched.condition = true; updateTierPreview(); validate(); schedulePersist(); }));
+
+  els.form.addEventListener('submit', e => { e.preventDefault(); confirmStep1(); });
+
+  // reset (with confirmation modal)
+  els.newReport && els.newReport.addEventListener('click', openResetModal);
+  els.btnConfirmReset && els.btnConfirmReset.addEventListener('click', doReset);
+  els.resetModal.querySelectorAll('[data-role="modal-cancel"]').forEach(el => el.addEventListener('click', closeResetModal));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !els.resetModal.hidden) closeResetModal(); });
+
+  // step 2 (SOW) events
+  els.sowList.addEventListener('click',  onSowClick);
+  els.sowList.addEventListener('input',  onSowInput);
+  els.sowList.addEventListener('change', onSowChange);
+  els.sowExpandAll   && els.sowExpandAll.addEventListener('click',   () => setAllCats(true));
+  els.sowCollapseAll && els.sowCollapseAll.addEventListener('click', () => setAllCats(false));
+  els.btnBack2      && els.btnBack2.addEventListener('click', () => goToStep(1));
+  els.btnToResults  && els.btnToResults.addEventListener('click', () => goToStep(3));
+
+  // step 3 (results dashboard)
+  els.resBreakdown.addEventListener('input', onResInput);
+  els.resBreakdown.addEventListener('click', onResClick);
+  els.resRemarks.addEventListener('input', onResInput);
+  els.btnBack3 && els.btnBack3.addEventListener('click', () => goToStep(2));
+  els.btnExport && els.btnExport.addEventListener('click', generateExcel);
+
+  /* ---------- init ---------- */
+  const restored = restore();        // rehydrate from localStorage if present
+  updateTierPreview();
+  validate();
+  if (restored && restored.step >= 2 && restored.step <= 3){
+    goToStep(restored.step);         // renders SOW / dashboard from restored state
+  } else {
+    renderProgress();
+  }
+
+  // expose for later steps / debugging
+  window.RehabWizard = app;
+})();
+</script>
+</body>
+</html>
