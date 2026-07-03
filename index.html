@@ -780,7 +780,7 @@ a{ color:inherit; }
     ]},
 
     { key:'demo', title:'DEMO', titleHe:'הריסה', items:[
-      ['Demo', 'UNIT', 900, 'heavy','verify', 1, 'הריסה/פינוי — רק בשיפוץ יסודי; אמת היקף.'],
+      ['Demo', 'UNIT', 900, 'heavy','verify', 1, 'עלות הריסה/פינוי משתנה מאוד לפי הפרויקט — ערכו את מחיר היחידה בחופשיות (ברירת מחדל בלבד).'],
     ]},
 
     { key:'exterior', title:'EXTERIOR', titleHe:'חוץ', items:[
@@ -805,9 +805,12 @@ a{ color:inherit; }
 
     { key:'kitchen', title:'KITCHEN', titleHe:'מטבח', items:[
       ['Basic Cabinets',                 'LF', 400, 'medium','must',   null, 'מטבח מוכר את הבית — מדוד אורך רץ (LF).'],
+      ['Mid-grade Cabinets',             'LF', 550, null,    'good',   null, 'שדרוג ביניים בין בסיסי ליוקרתי — חלופה ל-Basic (בחרו אחד).'],
       ['Cabinet Knobs',                  'EA', 2,   null,    'good',   null],
       ['Cabinet Handles',                'EA', 3,   'medium','good',   null, 'ידיות/כפתורים — התאם לכמות הדלתות/מגירות.'],
       ['Formica Countertop Including Labor','LF',40,'medium','must',   null],
+      ['Laminate Countertops',           'LF', 40,  null,    'good',   null, 'חלופת משטח כלכלית — בחרו משטח אחד בלבד.'],
+      ['Granite/Quartz Countertops',     'LF', 85,  null,    'comps',  null, 'שדרוג פרימיום — רק אם ה-comps תומכים; בחרו משטח אחד בלבד.'],
       ['Kitchen Sink (Double Steel)',    'EA', 350, 'medium','must',   1],
       ['Kitchen Faucet',                 'EA', 100, 'medium','must',   1],
       ['Refrigerator',                   'EA', 1000,null,    'comps',  null],
@@ -850,7 +853,8 @@ a{ color:inherit; }
       ['Standard Outlet',                   'EA', 12,  'medium','verify', null],
       ['Standard GFCI Outlet',              'EA', 30,  'medium','must',   null, 'נדרש לפי תקן ליד מים (מטבח/אמבט).'],
       ['Outlet / Switch Plate Cover',       'EA', 12,  'light', 'good',   null, 'ריענון זול ומהיר.'],
-      ['Complete Replacement (subjective)', 'EA', 3750,null,    'comps',  null],
+      ['Complete Replacement (subjective)', 'EA', 3750,null,    'comps',  null, 'החלפה/חיווט מלא — סכום דינמי; ערכו את מחיר היחידה לפי צרכי הנכס.'],
+      ['Electrical Panel Replacement',      'EA', 3000,'heavy', 'verify', 1, 'החלפת לוח חשמל — נפוץ בבתים ישנים; הסירו אם הלוח תקין.'],
       ['Smoke Detector (Kidde i9010)',      'EA', 30,  'light', 'must',   null, 'חובה לפי תקן — אמת כמות לפי חדרי שינה.'],
       ['CO2 Detector',                      'EA', 30,  'light', 'must',   null, 'חובה לפי תקן.'],
     ]},
@@ -880,6 +884,14 @@ a{ color:inherit; }
       ['Debris Removal – Interior',                   'CY', 45,  'heavy','verify', null],
       ['Window Replacement (Subjective)',             'EA', 360, null,    'comps',  null],
       ['Replace drop cielling tiles',                 'EA', 10,  null,    'verify', null],
+    ]},
+
+    { key:'structural', title:'STRUCTURAL & ROOFING', titleHe:'מבנה וגג', items:[
+      ['Foundation Stabilization / Piering', 'EA', 1500, 'heavy','verify', null, 'תלוי בדוח מהנדס — מדדו כמות עמודי תמיכה; המחיר משתנה מאוד וניתן לעריכה.'],
+      ['Rotten Joist / Beam Replacement',    'LF', 25,   'heavy','verify', null, 'החלפת קורות/עמודים רקובים — נפוץ בשיפוץ יסודי; מדדו אורך רץ בפועל.'],
+      ['Full Roof Replacement',              'SF', 10,   null,   'comps',  'sqft', 'החלפת גג מלאה — רק אם נדרש; הכמות מתאכלסת משטח הנכס וניתנת לעריכה.'],
+      ['Local Roof Patching & Repairs',      'GENERAL', 500, null,'comps',  1, 'תיקון נקודתי כחלופה זולה להחלפה מלאה.'],
+      ['Shingle Tear-off (Per Layer)',       'SF', 1,    null,   'verify', 'sqft', 'קילוף שכבת רעפים קיימת לפני החלפה — לפי שכבה.'],
     ]},
 
     { key:'cleaning', title:'CLEANING', titleHe:'ניקיון', items:[
